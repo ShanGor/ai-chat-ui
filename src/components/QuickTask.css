@@ -1,0 +1,17 @@
+
+.quick-task {
+    width: 20rem;
+}
+
+.quick-task:hover {
+    cursor: pointer;
+    opacity: 0.8;
+}
+
+.hide {
+    display: none;
+}
+.quick-task:hover .hide {
+    display: block;
+    margin-top: 0.8rem;
+}

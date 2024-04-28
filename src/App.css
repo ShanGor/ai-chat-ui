@@ -7,3 +7,7 @@
   height: 100%;
 }
 
+.center {
+  text-align: center;
+  margin: 0 auto;
+}

@@ -5,10 +5,10 @@ import { theme, Card, Layout } from "antd";
 import ChatBoard from './components/ChatBoard';
 const { Sider, Content, Header, Footer } = Layout;
 
-const mainPaneBgColor = null//'rgba(36, 36, 66, 0.8)'
-const mainPaneBorderColor = '#e3e3e3'
-const mainPaneHeaderColor = 'rgb(78 78 78)'
-const mainPaneParagraphColor = '#374151'
+export const mainPaneBgColor = null//'rgba(36, 36, 66, 0.8)'
+export const mainPaneBorderColor = '#e3e3e3'
+export const mainPaneHeaderColor = 'rgb(78 78 78)'
+export const mainPaneParagraphColor = '#374151'
 
 const fetchEvents = (url, textConsumer, data=null, headers={}, method='POST') => {
   fetch(url, {
