@@ -1,5 +1,5 @@
-import {Select, Button, Tooltip, Flex, Typography } from "antd"
-import { useState, useEffect } from "react"
+import {Button, Tooltip, Flex } from "antd"
+import { useContext, useEffect, useState } from "react"
 import {
     PlusOutlined,
     ArrowUpOutlined,
@@ -7,12 +7,21 @@ import {
   } from '@ant-design/icons';
 import "./ChatBox.css"
 import Microphone from "../assets/microphone.svg"
-import { mainPaneParagraphColor } from "../App"
+import { ChatUiContext, mainPaneParagraphColor } from "../App"
 
-const ChatBox = () => {
+const ChatBox = ({message, setMessage, model}) => {
   const [height, setHeight] = useState(2)
-  const [lines, setLines] = useState('')
   const [images, setImages] = useState([])
+  const {messageApi} = useContext(ChatUiContext)
+
+  const submitMessage = ()=> {
+    if (!model) {
+      messageApi.open({
+        type: 'error',
+        content: 'Please select a model before sending messages',
+      });
+    }
+  }
 
   const inputStyle = () => {
     return  {
@@ -32,7 +41,7 @@ const ChatBox = () => {
 
   const inputChanged = (e) => {
     let text = e.target.value
-    setLines(text)
+    setMessage(text)
     if (text && text.length > 0) {
       const chunks = text.split(/\r\n|\r|\n/);
       var lineCount = chunks.length > 5 ? 5 : chunks.length
@@ -49,6 +58,13 @@ const ChatBox = () => {
   const removeImage = (index) => {
     setImages(images.filter((_, idx) => idx !== index))
     document.getElementById("chat-box-file-picker").value=null
+  }
+
+  const gotSomeMessage = () => {
+    if (message && message.trim().length > 0) {
+      return true
+    }
+    return false
   }
 
   const handleImageSelected = () => {
@@ -91,17 +107,18 @@ const ChatBox = () => {
           <Button shape="circle" onClick={uploadImage} type="text" icon={<PlusOutlined />} style={{marginLeft: '0rem', marginBottom: '0.25rem'}} />
         </Tooltip>
       </div>
-      <textarea style={inputStyle()} placeholder="Send a message" value={lines} onChange={inputChanged}></textarea>
+      <textarea style={inputStyle()} placeholder="Send a message" value={message} onChange={inputChanged}></textarea>
       <Flex style={{width: '4.6rem', borderRadius: '1rem', marginBottom: '0.1rem',}}>
-        <Tooltip title='Record voice'>
+        <Tooltip title='Record voice (Coming soon)'>
           <a style={{opacity: '0.6'}}>
             <img src={Microphone} alt="Microphone" style={{width: '1.5rem', marginLeft: '0.2rem', marginTop: '0.4rem'}} />
           </a>
         </Tooltip>
-        <Tooltip title='Send message'>
-          <Button shape="circle" type="text" style={{color: 'white',
-             backgroundColor: 'black', marginRight: '0rem',
-             borderBlockColor: 'black'}} icon={<ArrowUpOutlined />} />
+        <Tooltip title={gotSomeMessage() ? 'Send message' : 'Please enter a message'}>
+          <Button shape="circle" type="text" disabled={!gotSomeMessage()}
+                  onClick={submitMessage}
+                  className={gotSomeMessage()?'send-button-valid':'send-button-invalid'}
+                  icon={<ArrowUpOutlined />} />
         </Tooltip>
       </Flex>
     </Flex>

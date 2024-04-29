@@ -33,3 +33,15 @@ textarea {
     position: relative;
     color: white;
 }
+
+.send-button-valid {
+    color: white;
+    background-color: black;
+    border-block-color: black;
+}
+
+.send-button-invalid {
+    color: white;
+    background-color: grey;
+    border-block-color: grey;
+}

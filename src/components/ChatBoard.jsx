@@ -13,6 +13,7 @@ const { Title } = Typography;
 const ChatBoard = () => {
     const [models, setModels] = useState([])
     const [currentModel, setCurrentModel] = useState(null)
+    const [message, setMessage] = useState('')
 
     useEffect(() => {
         fetch(`${import.meta.env.VITE_API_URL}/api/tags`).then(res => res.json()).then(data => {
@@ -21,7 +22,7 @@ const ChatBoard = () => {
     }, [])
 
     const onQuickTask = (task) => {
-        console.log(task)
+        setMessage(task + "\n")
     }
 
     return (<div className="center">
@@ -48,7 +49,7 @@ const ChatBoard = () => {
             <QuickTask onClick={onQuickTask} title='Help me study' description='vacabulary for a college entrance exam' />
             <QuickTask onClick={onQuickTask} title='Give me ideas' description="for what to do with my kids's art" />
         </Flex>
-        <ChatBox />
+        <ChatBox message={message} model={currentModel} setMessage={setMessage}/>
     </div>
     )
 }

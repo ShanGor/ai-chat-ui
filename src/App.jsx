@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { createContext, useState } from 'react'
 import './App.css'
 import LeftSider from './components/LeftSider'
-import { theme, Card, Layout } from "antd";
+import { theme, message, Layout } from "antd";
 import ChatBoard from './components/ChatBoard';
 const { Sider, Content, Header, Footer } = Layout;
 
@@ -9,6 +9,8 @@ export const mainPaneBgColor = null//'rgba(36, 36, 66, 0.8)'
 export const mainPaneBorderColor = '#e3e3e3'
 export const mainPaneHeaderColor = 'rgb(78 78 78)'
 export const mainPaneParagraphColor = '#374151'
+
+export const ChatUiContext = createContext(null)
 
 const fetchEvents = (url, textConsumer, data=null, headers={}, method='POST') => {
   fetch(url, {
@@ -40,13 +42,15 @@ const fetchEvents = (url, textConsumer, data=null, headers={}, method='POST') =>
 }
 
 function App() {
+  const [messageApi, contextHolder] = message.useMessage();
   const [collapsed, setCollapsed] = useState(false);
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
 
   return (
-    <>
+    <ChatUiContext.Provider value={{messageApi}}>
+      {contextHolder}
       <Layout style={{width: '100vw', height: '100vh'}}>
         <Header>
           <div style={{color: 'white', marginTop: '-1rem', marginLeft: '-1rem'}}>
@@ -69,7 +73,7 @@ function App() {
           </Layout>
         </Content>
       </Layout>
-    </>
+    </ChatUiContext.Provider>
   )
 }
 
