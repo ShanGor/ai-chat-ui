@@ -1,22 +1,69 @@
-import {Divider, Tooltip, Button, Flex, ConfigProvider} from "antd"
+import {Divider, Tooltip, Button, Flex, ConfigProvider, Popconfirm} from "antd"
 import {
   DeleteOutlined,
   EditOutlined,
   ClearOutlined,
   PlusOutlined,
 } from '@ant-design/icons';
-import { useState } from "react"
+import { useContext, useEffect, useState } from "react"
 import './LeftSider.css'
+import { ChatUiContext } from "../App";
 
 const splitLineColor = 'rgba(250,250,250,0.5)'
+
+let dbOpenStatus = 'waiting'
+const dbConnection = window.indexedDB.open("chats",1);
+let chatsDb
+dbConnection.onsuccess = function (event) {
+  chatsDb = dbConnection.result;
+  dbOpenStatus = 'success'
+  console.log('IndexedDB openned successfully!');
+}
+dbConnection.onerror = function (event) {
+  dbOpenStatus = 'failed'
+  console.error('Failed to open IndexedDB.');
+}
+dbConnection.onupgradeneeded = function(event) {
+  chatsDb = event.target.result;
+  let objectStore
+  if (!chatsDb.objectStoreNames.contains('chat')) {
+    objectStore = chatsDb.createObjectStore('chat', { keyPath: 'id' });
+    console.log('Created object store for chat.');
+  }
+}
+
 const LeftSider = ({collapsed=false}) => {
-  const [data, setData] = useState([
-    'Racing car sprays burning fuel into crowd.',
-    'Japanese princess to wed commoner.',
-    'Australian walks 100km after outback crash.',
-    'Man charged over missing wedding girl.',
-    'Los Angeles battles huge wildfires.',
-  ])
+  const [data, setData] = useState([])
+  const [chatDb, setChatDb] = useState(null)
+  const [chatTable, setChatTable] = useState(null)
+  const {setCurrentChat, currentChat} = useContext(ChatUiContext)
+  useEffect(() => {
+    const checkDb = () => {
+      if (dbOpenStatus === 'waiting') {
+        setTimeout(checkDb, 100)
+      } else if (dbOpenStatus === 'success') {
+        setChatDb(chatsDb)
+      }
+    }
+
+    checkDb()
+  }, [])
+
+  useEffect(() => {
+    if (chatDb) {
+      const objectStore = chatDb.transaction('chat').objectStore('chat');
+      setChatTable(objectStore)
+      const request = objectStore.getAll();
+      request.onsuccess = function(event) {
+        const result = event.target.result;
+        console.log(result);
+        setData(result)
+      };
+      request.onerror = function(event) {
+        console.error('Failed to retrieve data from IndexedDB.');
+      }
+    }
+  }, [chatDb])
 
   const abbr = (str) => {
     const max = 28
@@ -41,19 +88,26 @@ const LeftSider = ({collapsed=false}) => {
           </Divider>
         </ConfigProvider>
       <ul>
-        {data.map(item => <li className='chat-history' key={item}>
+        {data?.map(item => <li className='chat-history' key={item.id}>
           <Flex>
             <div style={{width: '90%'}}>
-              <Tooltip title={item}>
-              {abbr(item)}
+              <Tooltip title={item.name}>
+              {abbr(item.name)}
               </Tooltip>
             </div>
             <Flex style={{width: '10%'}} justify='flex-end' align="flex-end">
               <Tooltip title='Edit/View'>
-                <Button type="text" style={{color:'white'}} shape="circle" size="small" icon={<EditOutlined />} />
+                <Button type="text" onClick={() => {setCurrentChat(item)}} style={{color:'white'}} shape="circle" size="small" icon={<EditOutlined />} />
               </Tooltip>
               <Tooltip title='Delete this item'>
-                <Button type="text" style={{color:'white'}} shape="circle" size="small" icon={<DeleteOutlined />} />
+                <Popconfirm title='Confirm to delete?'
+                            onConfirm={()=>{}}
+                            onCancel={()=>{}}
+                            okText="Yes"
+                            cancelText="No"
+                            description='Are you sure to delete this chat?'>
+                  <Button type="text" style={{color:'white'}} shape="circle" size="small" icon={<DeleteOutlined />} />
+                </Popconfirm>
               </Tooltip>
             </Flex>
           </Flex>
@@ -62,7 +116,9 @@ const LeftSider = ({collapsed=false}) => {
         <li className='chat-history' key='clear'>
           <div style={{marginTop: '0.5rem'}}>
           <Tooltip title='Clear all the history items'>
-            <Button type="text" style={{color:'white'}} size="small" icon={<ClearOutlined />}>Clear</Button>
+            <Popconfirm title='Confirm to clear?'>
+              <Button type="text" style={{color:'white'}} size="small" icon={<ClearOutlined />}>Clear</Button>
+            </Popconfirm>
           </Tooltip>
           </div>
         </li>

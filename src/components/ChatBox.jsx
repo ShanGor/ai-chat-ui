@@ -9,7 +9,7 @@ import "./ChatBox.css"
 import Microphone from "../assets/microphone.svg"
 import { ChatUiContext, mainPaneParagraphColor } from "../App"
 
-const ChatBox = ({message, setMessage, model}) => {
+const ChatBox = ({message, setMessage, model, setSizeChanged}) => {
   const [height, setHeight] = useState(2)
   const [images, setImages] = useState([])
   const {messageApi} = useContext(ChatUiContext)
@@ -22,6 +22,10 @@ const ChatBox = ({message, setMessage, model}) => {
       });
     }
   }
+
+  useEffect(()=>{
+    setSizeChanged()
+  }, [images])
 
   const inputStyle = () => {
     return  {
@@ -82,7 +86,7 @@ const ChatBox = ({message, setMessage, model}) => {
 
   const imageCard = (image, index) => {
     return (<div className="image-card" key={index}>
-      <div style={{zIndex: '1', paddingTop: '0.5rem',}}>
+      <div style={{paddingTop: '0.5rem',}}>
         <img src={image} alt="Image" style={{borderRadius: '0.5rem', width: '4rem', height: '4rem', objectFit: 'cover'}} />
       </div>
       
@@ -101,7 +105,6 @@ const ChatBox = ({message, setMessage, model}) => {
         </Flex>
       </div>
     <Flex align="flex-end">
-      
       <div style={{width: '2.6rem', borderRadius: '1rem',}}>
         <Tooltip title='Upload images'>
           <Button shape="circle" onClick={uploadImage} type="text" icon={<PlusOutlined />} style={{marginLeft: '0rem', marginBottom: '0.25rem'}} />

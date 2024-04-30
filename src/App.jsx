@@ -43,31 +43,42 @@ const fetchEvents = (url, textConsumer, data=null, headers={}, method='POST') =>
 
 function App() {
   const [messageApi, contextHolder] = message.useMessage();
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(false)
+  const [currentChat, setCurrentChat] = useState(null)
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
 
   return (
-    <ChatUiContext.Provider value={{messageApi}}>
+    <ChatUiContext.Provider value={{messageApi, currentChat, setCurrentChat}}>
       {contextHolder}
-      <Layout style={{width: '100vw', height: '100vh'}}>
-        <Header>
+      <Layout theme='dark' style={{width: '100vw', minHeight: '100vh'}}>
+        <Header style={{height: '3rem',width: '100vw',
+                    position: 'fixed',}}>
           <div style={{color: 'white', marginTop: '-1rem', marginLeft: '-1rem'}}>
             <h2>AI Chat</h2>
           </div>
         </Header>
-        <Content className='full-height'>
-          <Layout theme='dark'  style={{height: '100%'}}>
+        <Content theme='dark' className='full-height'>
+          <Layout hasSider theme='dark'  style={{height: '100%'}}>
             <Sider collapsible collapsed={collapsed}
-                   width='20%'
+                   width='15rem'
+                   style={{
+                    overflow: 'auto',
+                    height: '100vh',
+                    position: 'fixed',
+                    left: 0,
+                    top: '3rem',
+                    bottom: 0,
+                  }}
                    collapsedWidth={15} className='full-height'
                    onCollapse={(collapsed) => {
               setCollapsed(collapsed)
             }}>
-              <LeftSider collapsed={collapsed}/>
+              <LeftSider collapsed={collapsed} />
             </Sider>
-            <Content style={{color: mainPaneBgColor, paddingLeft: '0.5rem', paddingTop: '0.5rem'}}>
+            <Content style={{color: mainPaneBgColor,
+              marginTop: '2rem', marginLeft: `${collapsed? '0.5rem' : '15rem'}`, paddingLeft: '0.5rem', paddingTop: '0.5rem'}}>
               <ChatBoard/>
             </Content>
           </Layout>
