@@ -35,7 +35,7 @@ dbConnection.onupgradeneeded = function(event) {
 const LeftSider = ({collapsed=false}) => {
   const [data, setData] = useState([])
   const [chatDb, setChatDb] = useState(null)
-  const [chatTable, setChatTable] = useState(null)
+  const [refreshTimes, setRefreshTimes] = useState(0)
   const {setCurrentChat, currentChat} = useContext(ChatUiContext)
   useEffect(() => {
     const checkDb = () => {
@@ -52,18 +52,33 @@ const LeftSider = ({collapsed=false}) => {
   useEffect(() => {
     if (chatDb) {
       const objectStore = chatDb.transaction('chat').objectStore('chat');
-      setChatTable(objectStore)
       const request = objectStore.getAll();
       request.onsuccess = function(event) {
         const result = event.target.result;
         console.log(result);
-        setData(result)
+        setData((result||[]).sort((a, b) => {
+          return b.id - a.id;
+        }))
       };
       request.onerror = function(event) {
         console.error('Failed to retrieve data from IndexedDB.');
       }
     }
-  }, [chatDb])
+  }, [chatDb, refreshTimes])
+
+  useEffect(() => {
+    if (chatDb && currentChat && !currentChat.initiatedBySide) {
+      console.log("Data changed, now save it")
+      let request = chatDb.transaction(['chat'], "readwrite").objectStore('chat').put(currentChat);
+      request.onsuccess = function(event) {
+        console.log('Data saved successfully.');
+        setRefreshTimes(t => t+1)
+      };
+      request.onerror = function(event) {
+        console.error('Failed to save data to IndexedDB.');
+      }
+    }
+  }, [currentChat])
 
   const abbr = (str) => {
     const max = 28
@@ -71,6 +86,23 @@ const LeftSider = ({collapsed=false}) => {
       return `${str.substring(0, max)}..`
     } else {
       return str
+    }
+  }
+
+  const deleteHistory = (id) => {
+    if (!chatDb) {
+      console.error(`IndexedDB is not ready yet, cannot delete data with id ${id}.`);
+      return
+    }
+
+    const objectStore = chatDb.transaction('chat', "readwrite").objectStore('chat');
+    const request = objectStore.delete(id);
+    request.onsuccess = function(event) {
+      console.log('Data deleted successfully.');
+      setRefreshTimes(t => t+1)
+    };
+    request.onerror = function(event) {
+      console.error('Failed to delete data from IndexedDB.');
     }
   }
 
@@ -82,7 +114,9 @@ const LeftSider = ({collapsed=false}) => {
             Chats
             <span style={{paddingLeft:'0.5rem'}}>
               <Tooltip title='Create a new chat'>
-                <Button size="small" style={{color:'white', backgroundColor:'green'}} icon={<PlusOutlined />}/>
+                <Button size="small" style={{color:'white', backgroundColor:'green'}}
+                        onClick={() => {setCurrentChat({initiatedBySide: true})}}
+                        icon={<PlusOutlined />}/>
               </Tooltip>
             </span>
           </Divider>
@@ -97,11 +131,11 @@ const LeftSider = ({collapsed=false}) => {
             </div>
             <Flex style={{width: '10%'}} justify='flex-end' align="flex-end">
               <Tooltip title='Edit/View'>
-                <Button type="text" onClick={() => {setCurrentChat(item)}} style={{color:'white'}} shape="circle" size="small" icon={<EditOutlined />} />
+                <Button type="text" onClick={() => {setCurrentChat({ ...item, initiatedBySide: true,})}} style={{color:'white'}} shape="circle" size="small" icon={<EditOutlined />} />
               </Tooltip>
               <Tooltip title='Delete this item'>
                 <Popconfirm title='Confirm to delete?'
-                            onConfirm={()=>{}}
+                            onConfirm={()=>{deleteHistory(item.id)}}
                             onCancel={()=>{}}
                             okText="Yes"
                             cancelText="No"

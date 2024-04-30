@@ -13,12 +13,24 @@ import remarkGfm from 'remark-gfm'
 
 const { Title } = Typography;
 
+const abbr = (str) => {
+    if (str && str.length > 255) {
+        return str.substring(0, 255) + '...'
+    } else {
+        return str
+    }
+}
+
+let generatingTextCache = ''
 
 const ChatBoard = () => {
     const [models, setModels] = useState([])
     const [currentModel, setCurrentModel] = useState(null)
     const [message, setMessage] = useState('')
-    const {setCurrentChat, currentChat} = useContext(ChatUiContext)
+    const [currentResponse, setCurrentResponse] = useState('')
+    const [generating, setGenerating] = useState(false)
+    const [generatingText, setGeneratingText] = useState('')
+    const {currentChat, setCurrentChat} = useContext(ChatUiContext)
     const [chatHistory, setChatHistory] = useState([])
     const [chatboxTop, setChatboxTop] = useState(0)
     const [selectModeBottom, setSelectModeBottom] = useState(0)
@@ -31,10 +43,24 @@ const ChatBoard = () => {
     }, [])
 
     useEffect(() => {
-        if (currentChat) {
-            setChatHistory(currentChat.chats)
+        if (currentChat && currentChat.initiatedBySide) {
+            setChatHistory(currentChat.chats || [])
         }
     }, [currentChat])
+
+    useEffect(() => {
+        if (chatHistory && chatHistory.length > 0) {
+            let o
+            if (currentChat?.id) {
+                o = {...currentChat}
+                o.initiatedBySide = undefined
+                o.chats = chatHistory
+            } else {
+                o = {id: Date.now(), chats: chatHistory, name: abbr(chatHistory[0].content.message)}
+            }
+            setCurrentChat(o)
+        }
+    }, [chatHistory])
 
     useEffect(() => {
         if (chatboxTop > 0 && selectModeBottom > 0) {
@@ -47,8 +73,42 @@ const ChatBoard = () => {
     }
 
     const setSizeChanged = () => {
-        console.log('size changed, pls check')
+        // console.log('size changed, pls check')
         setChatboxTop(document.getElementById('chat-box-parent').getBoundingClientRect().top)
+    }
+
+    const responseHandler = (data) => {
+        console.log("got data", data)
+        setGenerating(true)
+
+        if (data?.message?.content) {
+            generatingTextCache += data.message.content
+            setGeneratingText(generatingTextCache)
+        }
+
+        if (data?.done) {
+            console.log("done as: ", generatingTextCache)
+            setChatHistory(old => [...old, {
+                content: {
+                    response: generatingTextCache,
+                    model: data.model,
+                    created_at: data.created_at
+                },
+                role: 'assistant',
+            }])
+            setGenerating(false)
+            generatingTextCache = ''
+        }
+    }
+
+    const formatDate = (dateStr) => {
+        if (!dateStr) return ''
+
+        if (dateStr.indexOf('T') > 0) {
+            return new Date(Date.parse(dateStr)).toLocaleString()
+        } else {
+            return dateStr
+        }
     }
 
     return (<div className="center">
@@ -82,7 +142,7 @@ const ChatBoard = () => {
                       }</div>
                       <div style={{width:'90%', textAlign:'left'}}>
                         <div style={{fontSize: '0.7rem', color: mainPaneParagraphColor, marginTop: '0rem', marginBottom: '0.5rem'}}>
-                            {item.content?.created_at}
+                            {formatDate(item.content?.created_at)}
                         </div>
                         <div>
                             {item.images?.length > 0 && <Flex wrap="wrap" gap='small'>
@@ -98,7 +158,22 @@ const ChatBoard = () => {
                     </Flex>
                     <Divider></Divider>
                 </div>
-            })}</div>:
+                })}
+                {generating && <Flex style={{width: '98%', position: 'relative', minHeight: '5rem'}}>
+                    <div style={{width:'10%'}}>
+                          <Avatar src={assistant} />
+                          <div>{currentModel}</div>
+                    </div>
+                    <div style={{width:'90%', textAlign:'left'}}>
+                        <div style={{fontSize: '0.7rem', color: mainPaneParagraphColor, marginTop: '0rem', marginBottom: '0.5rem'}}>
+                            {formatDate(new Date().toLocaleString())}
+                        </div>
+                        <div>
+                            <Markdown remarkPlugins={[remarkGfm]}>{generatingText}</Markdown>
+                        </div>
+                    </div>
+                </Flex>}
+            </div>:
             <div>
               <div style={{width: '100%'}}>
                   <div className="center" 
@@ -122,7 +197,10 @@ const ChatBoard = () => {
                 setChatboxTop(el.getBoundingClientRect().top);
             }
         }}>
-          <ChatBox message={message} model={currentModel} setMessage={setMessage} setSizeChanged={setSizeChanged}/>
+          <ChatBox message={message} model={currentModel}
+                   setMessage={setMessage} setChatHistory={setChatHistory}
+                   responseHandler={responseHandler}
+                   setSizeChanged={setSizeChanged}/>
         </div>
     </div>
     )

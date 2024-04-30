@@ -12,35 +12,6 @@ export const mainPaneParagraphColor = '#374151'
 
 export const ChatUiContext = createContext(null)
 
-const fetchEvents = (url, textConsumer, data=null, headers={}, method='POST') => {
-  fetch(url, {
-    method: method,
-    headers: {...headers,
-       'Content-Type': 'text/event-stream;chartset=UTF-8',
-       'Connection': 'keep-alive',
-       'Cache-Control': 'no-cache'
-      },
-    body: data
-  })
-  .then(response => {
-    const reader = response.body.getReader()
-    const textDecoder = new TextDecoder()
-    const readChunk = () => {
-      reader.read().then(({ value, done }) => {
-        if (done) { 
-          return
-        }
-        const text = textDecoder.decode(value)
-        textConsumer(text.substring('event:'.length))
-        readChunk()
-      }).catch(error => {
-        console.error(error)
-      })
-    }
-  })
-  readChunk()
-}
-
 function App() {
   const [messageApi, contextHolder] = message.useMessage();
   const [collapsed, setCollapsed] = useState(false)

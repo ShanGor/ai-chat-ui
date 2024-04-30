@@ -8,8 +8,9 @@ import {
 import "./ChatBox.css"
 import Microphone from "../assets/microphone.svg"
 import { ChatUiContext, mainPaneParagraphColor } from "../App"
+import { fetchEvents } from "../Utility";
 
-const ChatBox = ({message, setMessage, model, setSizeChanged}) => {
+const ChatBox = ({message, setMessage, model, setSizeChanged, setChatHistory, responseHandler}) => {
   const [height, setHeight] = useState(2)
   const [images, setImages] = useState([])
   const {messageApi} = useContext(ChatUiContext)
@@ -20,12 +21,68 @@ const ChatBox = ({message, setMessage, model, setSizeChanged}) => {
         type: 'error',
         content: 'Please select a model before sending messages',
       });
+    } else {
+      setChatHistory(hist => {
+        let newHist = [...hist, {
+          role: 'user',
+          content: {
+            created_at: new Date().toLocaleString(),
+            message: message.trim(),
+            model: model
+          },
+          images: images
+        }]
+        triggerAiChatCompletion(newHist)
+        return newHist
+      })
+      setMessage('')
+      setImages([])
     }
   }
 
   useEffect(()=>{
     setSizeChanged()
   }, [images])
+
+  const triggerAiChatCompletion = (hist) => {
+    let request
+    if (hist.length > 1) {
+      let requestMessages = []
+      hist.map(o => {
+        if (o.role == 'user') {
+          requestMessages.push({
+            role: o.role,
+            content: o.content.message
+          })
+        } else {
+          requestMessages.push({
+            role: o.role,
+            content: o.content.response
+          })
+        }
+      })
+      request = {
+        model: model,
+        messages: requestMessages,
+        stream: true
+      }
+
+    } else {
+      request = {
+        model: model,
+        messages: [{
+          role: 'user',
+          content: hist[0].content.message
+        }],
+        stream: true
+      }
+    }
+
+    fetchEvents(`${import.meta.env.VITE_API_URL}/chat/ollama`, (text) => {
+      console.log("got text", text)
+      responseHandler(JSON.parse(text))
+    }, JSON.stringify(request))
+  }
 
   const inputStyle = () => {
     return  {
