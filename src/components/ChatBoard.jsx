@@ -1,4 +1,4 @@
-import {Select, Divider, Avatar, Flex, Typography, Spin, Tooltip } from "antd"
+import {Select, Divider, Avatar, Flex, Typography, Spin, Tooltip, Image } from "antd"
 import { useState, useEffect, useContext } from "react"
 import { ChatUiContext, mainPaneParagraphColor } from "../App"
 import {
@@ -183,7 +183,7 @@ const ChatBoard = () => {
                             {item.images?.length > 0 && <Flex wrap="wrap" gap='small'>
                                 {item.images?.map((image, index) => {
                                 return <div key={index}>
-                                    <img src={image} style={{maxWidth:'6rem', maxHeight: '6rem'}}/>
+                                    <Image src={image} style={{maxWidth:'6rem', maxHeight: '6rem'}}/>
                                 </div>
                                 })}
                             </Flex>}
