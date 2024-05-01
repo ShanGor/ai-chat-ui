@@ -4,6 +4,7 @@ import { ChatUiContext, mainPaneParagraphColor } from "../App"
 import {
     AndroidOutlined,
     CopyOutlined,
+    ReloadOutlined,
   } from '@ant-design/icons';
 import QuickTask from "./QuickTask";
 import "./MarkdownCustom.css"
@@ -233,7 +234,17 @@ const ChatBoard = () => {
                         </div>
                         <div id='generating-box-parent'>
                             <Markdown remarkPlugins={[remarkGfm]}>{generatingText}</Markdown>
-                            <Spin size='small' style={{marginLeft: '0.5rem'}}/>
+                            <Spin style={{marginLeft: '0.5rem'}}
+                                  tipe='Generating..'
+                                  indicator={
+                                    <ReloadOutlined
+                                      style={{
+                                        fontSize: 12,
+                                      }}
+                                      spin
+                                    />
+                                  }
+                            />
                             <span id='generating-position'></span>
                         </div>
                     </div>
