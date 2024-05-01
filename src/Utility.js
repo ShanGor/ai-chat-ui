@@ -75,3 +75,14 @@ export const fireEndKey = () => {
     window.dispatchEvent(eventKeyDown);
     window.dispatchEvent(eventKeyUp);
 }
+
+
+export const formatDate = (dateStr) => {
+  if (!dateStr) return ''
+
+  if (dateStr.indexOf('T') > 0) {
+      return new Date(Date.parse(dateStr)).toLocaleString()
+  } else {
+      return dateStr
+  }
+}

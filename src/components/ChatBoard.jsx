@@ -1,12 +1,9 @@
-import {Select, Divider, Avatar, Flex, Typography, Spin, Tooltip, Image } from "antd"
+import {Select, Divider, Avatar, Flex, Tooltip, Image } from "antd"
 import { useState, useEffect, useContext } from "react"
 import { ChatUiContext, mainPaneParagraphColor } from "../App"
 import {
-    AndroidOutlined,
     CopyOutlined,
-    ReloadOutlined,
   } from '@ant-design/icons';
-import QuickTask from "./QuickTask";
 import "./MarkdownCustom.css"
 import ChatBox from "./ChatBox";
 import user from '../assets/user.svg'
@@ -15,8 +12,9 @@ import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import {Prism as SyntaxHighlighter} from 'react-syntax-highlighter'
 import dark from 'react-syntax-highlighter/dist/esm/styles/prism/one-dark'
-
-const { Title } = Typography;
+import NewChats from "./NewChats";
+import GeneratingResponseSection from "./GeneratingResponseSection";
+import { formatDate } from "../Utility";
 
 const abbr = (str) => {
     if (str && str.length > 255) {
@@ -81,10 +79,6 @@ const ChatBoard = () => {
         setCurrentModel(value)
     }
 
-    const onQuickTask = (task) => {
-        setMessage(task + "\n")
-    }
-
     const copyCode = (code) => {
         navigator.clipboard.writeText(code).then(() => {
             messageApi.open({
@@ -133,16 +127,7 @@ const ChatBoard = () => {
             setGenerating(false)
             generatingTextCache = ''
             generatingBoxHeightCache=0
-        }
-    }
-
-    const formatDate = (dateStr) => {
-        if (!dateStr) return ''
-
-        if (dateStr.indexOf('T') > 0) {
-            return new Date(Date.parse(dateStr)).toLocaleString()
-        } else {
-            return dateStr
+            setGeneratingText(generatingTextCache)
         }
     }
 
@@ -222,50 +207,9 @@ const ChatBoard = () => {
                     <Divider></Divider>
                 </div>
                 })}
-                {generating && <Flex style={{width: '98%', position: 'relative', minHeight: '5rem'}}>
-                    <div style={{width:'10%', minWidth: '7rem'}}>
-                          <Avatar src={assistant} />
-                          <div>{currentModel}</div>
-                    </div>
-                    <div style={{width:'90%', textAlign:'left'}}>
-                        <div style={{fontSize: '0.7rem', color: mainPaneParagraphColor, marginTop: '0rem', marginBottom: '0.5rem'}}>
-                            {formatDate(new Date().toLocaleString())}
-                            <Spin size='small' style={{marginLeft: '0.5rem'}}/>
-                        </div>
-                        <div id='generating-box-parent'>
-                            <Markdown remarkPlugins={[remarkGfm]}>{generatingText}</Markdown>
-                            <Spin style={{marginLeft: '0.5rem'}}
-                                  tipe='Generating..'
-                                  indicator={
-                                    <ReloadOutlined
-                                      style={{
-                                        fontSize: 12,
-                                      }}
-                                      spin
-                                    />
-                                  }
-                            />
-                            <span id='generating-position'></span>
-                        </div>
-                    </div>
-                </Flex>}
+                {generating && <GeneratingResponseSection generatingText={generatingText} currentModel={currentModel} />}
             </div>:
-            <div>
-              <div style={{width: '100%'}}>
-                  <div className="center" 
-                       style={{borderRadius: '50%', width: '3rem', height: '3rem', border: '1px solid #ccc', background: 'white', marginTop: '2rem', marginBottom: '-1.5rem'}}>
-                    <AndroidOutlined style={{fontSize: '1.5rem', marginTop: '0.7rem'}} />
-                  </div>
-                  <Title level={3} style={{color: mainPaneParagraphColor}}>Hi pretty!<br/>
-                  How can I help you today!</Title>
-              </div>
-              <Flex justify="center" style={{width: '800px'}} className="center" gap='large' wrap="wrap">
-                  <QuickTask onClick={onQuickTask} title='Tell me a joke' description='about the Roman Empire' />
-                  <QuickTask onClick={onQuickTask} title='Show me a code snippet' description="of a website's sticky header" />
-                  <QuickTask onClick={onQuickTask} title='Help me study' description='vacabulary for a college entrance exam' />
-                  <QuickTask onClick={onQuickTask} title='Give me ideas' description="for what to do with my kids's art" />
-              </Flex>
-            </div>}
+            <NewChats setMessage={setMessage}/>}
         </div>
         
         <div style={{position: 'fixed', bottom: '0', width: '80%', margin: '0 auto'}} id='chat-box-parent' ref={(el) => {
