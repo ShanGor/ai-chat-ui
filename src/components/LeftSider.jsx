@@ -8,6 +8,7 @@ import {
 import { useContext, useEffect, useState } from "react"
 import './LeftSider.css'
 import { ChatUiContext } from "../App";
+import { abbr } from "../Utility";
 
 const splitLineColor = 'rgba(250,250,250,0.5)'
 
@@ -25,9 +26,8 @@ dbConnection.onerror = function (event) {
 }
 dbConnection.onupgradeneeded = function(event) {
   chatsDb = event.target.result;
-  let objectStore
   if (!chatsDb.objectStoreNames.contains('chat')) {
-    objectStore = chatsDb.createObjectStore('chat', { keyPath: 'id' });
+    chatsDb.createObjectStore('chat', { keyPath: 'id' });
     console.log('Created object store for chat.');
   }
 }
@@ -79,15 +79,6 @@ const LeftSider = ({collapsed=false}) => {
     }
   }, [currentChat])
 
-  const abbr = (str) => {
-    const max = 28
-    if (str && str.length > max) {
-      return `${str.substring(0, max)}..`
-    } else {
-      return str
-    }
-  }
-
   const deleteHistory = (id) => {
     if (!chatDb) {
       console.error(`IndexedDB is not ready yet, cannot delete data with id ${id}.`);
@@ -128,7 +119,7 @@ const LeftSider = ({collapsed=false}) => {
           <Flex>
             <div style={{width: '90%'}}>
               <Tooltip title={item.name}>
-              {abbr(item.name)}
+              {abbr(item.name, 28)}
               </Tooltip>
             </div>
             <Flex style={{width: '10%'}} justify='flex-end' align="flex-end">

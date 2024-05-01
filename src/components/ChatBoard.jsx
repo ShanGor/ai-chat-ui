@@ -14,15 +14,7 @@ import {Prism as SyntaxHighlighter} from 'react-syntax-highlighter'
 import dark from 'react-syntax-highlighter/dist/esm/styles/prism/one-dark'
 import NewChats from "./NewChats";
 import GeneratingResponseSection from "./GeneratingResponseSection";
-import { formatDate } from "../Utility";
-
-const abbr = (str) => {
-    if (str && str.length > 255) {
-        return str.substring(0, 255) + '...'
-    } else {
-        return str
-    }
-}
+import { abbr, formatDate } from "../Utility";
 
 let generatingTextCache = ''
 let generatingBoxHeightCache=0
@@ -62,7 +54,7 @@ const ChatBoard = () => {
                 o.initiatedBySide = undefined
                 o.chats = chatHistory
             } else {
-                o = {id: Date.now(), chats: chatHistory, name: abbr(chatHistory[0].content.message)}
+                o = {id: Date.now(), chats: chatHistory, name: abbr(chatHistory[0].content.message, 255)}
             }
             setCurrentChat(o)
         }

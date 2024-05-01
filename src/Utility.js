@@ -86,3 +86,11 @@ export const formatDate = (dateStr) => {
       return dateStr
   }
 }
+
+export const abbr = (str, maxSize) => {
+  if (str && str.length > maxSize) {
+      return str.substring(0, maxSize) + '..'
+  } else {
+      return str
+  }
+}
