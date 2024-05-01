@@ -8,14 +8,23 @@ import {
 import "./ChatBox.css"
 import Microphone from "../assets/microphone.svg"
 import { ChatUiContext, mainPaneParagraphColor } from "../App"
-import { fetchEvents } from "../Utility";
+import { fetchEvents, trimImageMeta } from "../Utility";
 
 const ChatBox = ({message, setMessage, model, setSizeChanged, setChatHistory, responseHandler}) => {
   const [height, setHeight] = useState(2)
   const [images, setImages] = useState([])
   const {messageApi} = useContext(ChatUiContext)
+  const [inputFieldRef, setInputFieldRef] = useState(null)
 
   const submitMessage = ()=> {
+    if (!gotSomeMessage()) {
+      messageApi.open({
+        type: 'error',
+        content: 'Please enter a message before sending',
+      });
+      return
+    }
+
     if (!model) {
       messageApi.open({
         type: 'error',
@@ -32,6 +41,7 @@ const ChatBox = ({message, setMessage, model, setSizeChanged, setChatHistory, re
           },
           images: images
         }]
+        responseHandler({})
         triggerAiChatCompletion(newHist)
         return newHist
       })
@@ -44,22 +54,36 @@ const ChatBox = ({message, setMessage, model, setSizeChanged, setChatHistory, re
     setSizeChanged()
   }, [images])
 
+  useEffect(()=>{
+    if (message) {
+      const end = message.length;
+      inputFieldRef.setSelectionRange(end, end);
+      inputFieldRef.focus()
+    }
+  }, [message])
+
+  const handleKeyDown = (event) => {
+    if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+        // Your action when "CTRL+Enter" is pressed
+        event.preventDefault(); // Prevent default action if needed
+        submitMessage()
+    }
+  }
+
+
   const triggerAiChatCompletion = (hist) => {
     let request
-    if (hist.length > 1) {
+    if (hist.length > 0) {
       let requestMessages = []
       hist.map(o => {
-        if (o.role == 'user') {
-          requestMessages.push({
-            role: o.role,
-            content: o.content.message
-          })
-        } else {
-          requestMessages.push({
-            role: o.role,
-            content: o.content.response
-          })
+        let msg = {
+          role: o.role,
+          content: o.content.message
         }
+        if (o.images) {
+          msg.images = trimImageMeta(o.images)
+        }
+        requestMessages.push(msg)
       })
       request = {
         model: model,
@@ -67,19 +91,10 @@ const ChatBox = ({message, setMessage, model, setSizeChanged, setChatHistory, re
         stream: true
       }
 
-    } else {
-      request = {
-        model: model,
-        messages: [{
-          role: 'user',
-          content: hist[0].content.message
-        }],
-        stream: true
-      }
     }
 
     fetchEvents(`${import.meta.env.VITE_API_URL}/chat/ollama`, (text) => {
-      console.log("got text", text)
+      // console.log("got text", text)
       responseHandler(JSON.parse(text))
     }, JSON.stringify(request))
   }
@@ -167,7 +182,9 @@ const ChatBox = ({message, setMessage, model, setSizeChanged, setChatHistory, re
           <Button shape="circle" onClick={uploadImage} type="text" icon={<PlusOutlined />} style={{marginLeft: '0rem', marginBottom: '0.25rem'}} />
         </Tooltip>
       </div>
-      <textarea style={inputStyle()} placeholder="Send a message" value={message} onChange={inputChanged}></textarea>
+      <textarea style={inputStyle()} ref={el => setInputFieldRef(el)} id='chat-input-field'
+                placeholder="Send a message (CTRL+Enter)"  onKeyDown={handleKeyDown}
+                value={message} onChange={inputChanged}></textarea>
       <Flex style={{width: '4.6rem', borderRadius: '1rem', marginBottom: '0.1rem',}}>
         <Tooltip title='Record voice (Coming soon)'>
           <a style={{opacity: '0.6'}}>

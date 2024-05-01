@@ -33,3 +33,45 @@ export const fetchEvents = (url, textConsumer, data=null, headers={}, method='PO
       readChunk()
     })
   }
+
+/**
+ * In HTML, the image data is like 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEA...', however ollama only accepts the base64 data without the 'data:' prefix.
+ * Provide this function to trim the 'data:' prefix.
+ * @param {*} images 
+ */
+  export const trimImageMeta = (images) => {
+    return images?.map(image => {
+      if (image.startsWith('data:')) {
+        const base64Data = image.split(',')[1]
+        return base64Data
+      } else {
+        return image
+      }
+    })
+  }
+
+export const fireEndKey = () => {
+    // 创建一个KeyboardEvent对象
+    let eventKeyDown = new KeyboardEvent('keydown', {
+        bubbles: true, // 事件是否冒泡
+        cancelable: true, // 事件是否可以被取消
+        keyCode: 35, // End键的keyCode
+        which: 35, // 同keyCode，某些情况下也需要设置which属性
+        key: 'End', // 键的字符表示
+        code: 'End', // 对应于键盘布局的键码，这里使用'End'
+        charCode: 0 // 非字符键可以设置为0
+    });
+    let eventKeyUp = new KeyboardEvent('keyup', {
+      bubbles: true, // 事件是否冒泡
+      cancelable: true, // 事件是否可以被取消
+      keyCode: 35, // End键的keyCode
+      which: 35, // 同keyCode，某些情况下也需要设置which属性
+      key: 'End', // 键的字符表示
+      code: 'End', // 对应于键盘布局的键码，这里使用'End'
+      charCode: 0 // 非字符键可以设置为0
+  });
+
+    // 在指定元素上 dispatch 事件
+    window.dispatchEvent(eventKeyDown);
+    window.dispatchEvent(eventKeyUp);
+}

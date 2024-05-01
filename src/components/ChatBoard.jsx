@@ -1,15 +1,19 @@
-import {Select, Divider, Avatar, Card, Flex, Typography } from "antd"
+import {Select, Divider, Avatar, Flex, Typography, Spin, Tooltip } from "antd"
 import { useState, useEffect, useContext } from "react"
 import { ChatUiContext, mainPaneParagraphColor } from "../App"
 import {
     AndroidOutlined,
+    CopyOutlined,
   } from '@ant-design/icons';
 import QuickTask from "./QuickTask";
+import "./MarkdownCustom.css"
 import ChatBox from "./ChatBox";
 import user from '../assets/user.svg'
 import assistant from '../assets/assistant.svg'
 import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import {Prism as SyntaxHighlighter} from 'react-syntax-highlighter'
+import dark from 'react-syntax-highlighter/dist/esm/styles/prism/one-dark'
 
 const { Title } = Typography;
 
@@ -22,15 +26,15 @@ const abbr = (str) => {
 }
 
 let generatingTextCache = ''
+let generatingBoxHeightCache=0
 
 const ChatBoard = () => {
     const [models, setModels] = useState([])
     const [currentModel, setCurrentModel] = useState(null)
     const [message, setMessage] = useState('')
-    const [currentResponse, setCurrentResponse] = useState('')
     const [generating, setGenerating] = useState(false)
     const [generatingText, setGeneratingText] = useState('')
-    const {currentChat, setCurrentChat} = useContext(ChatUiContext)
+    const {currentChat, setCurrentChat, messageApi} = useContext(ChatUiContext)
     const [chatHistory, setChatHistory] = useState([])
     const [chatboxTop, setChatboxTop] = useState(0)
     const [selectModeBottom, setSelectModeBottom] = useState(0)
@@ -40,6 +44,9 @@ const ChatBoard = () => {
         fetch(`${import.meta.env.VITE_API_URL}/api/tags`).then(res => res.json()).then(data => {
             setModels(data.models)
         })
+        if (localStorage.getItem('model')) {
+            setCurrentModel(localStorage.getItem('model'))
+        }
     }, [])
 
     useEffect(() => {
@@ -68,8 +75,24 @@ const ChatBoard = () => {
         }
     }, [chatboxTop, selectModeBottom])
 
+    const modelChange = (value) => {
+        localStorage.setItem('model', value)
+        setCurrentModel(value)
+    }
+
     const onQuickTask = (task) => {
         setMessage(task + "\n")
+    }
+
+    const copyCode = (code) => {
+        navigator.clipboard.writeText(code).then(() => {
+            messageApi.open({
+                type: 'success',
+                content: 'Source code copied to clipboard!',
+                
+            })
+        })
+        
     }
 
     const setSizeChanged = () => {
@@ -78,19 +101,29 @@ const ChatBoard = () => {
     }
 
     const responseHandler = (data) => {
-        console.log("got data", data)
+        // console.log("got data", data)
         setGenerating(true)
 
         if (data?.message?.content) {
             generatingTextCache += data.message.content
             setGeneratingText(generatingTextCache)
+
+            // Move the view to the end of the chat history
+            setTimeout(() => {
+                let height = document.getElementById('generating-box-parent')?.getBoundingClientRect()?.height || 0
+                if (height > (generatingBoxHeightCache + 30)) {
+                    generatingBoxHeightCache = height
+                    // console.log('height', generatingBoxHeightCache)
+                    document.getElementById('generating-position')?.scrollIntoView(true, {behavior: 'smooth'})
+                }
+            }, 1000)
         }
 
         if (data?.done) {
-            console.log("done as: ", generatingTextCache)
+            // console.log("done as: ", generatingTextCache)
             setChatHistory(old => [...old, {
                 content: {
-                    response: generatingTextCache,
+                    message: generatingTextCache,
                     model: data.model,
                     created_at: data.created_at
                 },
@@ -98,6 +131,7 @@ const ChatBoard = () => {
             }])
             setGenerating(false)
             generatingTextCache = ''
+            generatingBoxHeightCache=0
         }
     }
 
@@ -120,7 +154,7 @@ const ChatBoard = () => {
             <Divider orientation='center'>
                 <span style={{marginRight: '0.5rem', fontSize: '1.3rem'}}>Select a model:</span>
               <Select style={{width: '150px'}}
-                value={currentModel} onSelect={setCurrentModel}
+                value={currentModel} onSelect={modelChange}
                 placeholder="from the list"
                 options={models.map(model => {
                     return {value: model.name, label: model.name}
@@ -132,7 +166,7 @@ const ChatBoard = () => {
              chatHistory.map((item, index) => {
                 return <div key={index}>
                     <Flex style={{width: '98%'}}>
-                      <div style={{width:'10%'}}>{
+                      <div style={{width:'10%', minWidth: '7rem'}}>{
                         item.role === 'assistant'?
                         <>
                           <Avatar src={assistant} />
@@ -148,11 +182,39 @@ const ChatBoard = () => {
                             {item.images?.length > 0 && <Flex wrap="wrap" gap='small'>
                                 {item.images?.map((image, index) => {
                                 return <div key={index}>
-                                    <img src={image.url} style={{maxWidth:'6rem', maxHeight: '6rem'}}/>
+                                    <img src={image} style={{maxWidth:'6rem', maxHeight: '6rem'}}/>
                                 </div>
                                 })}
                             </Flex>}
-                            <Markdown remarkPlugins={[remarkGfm]}>{item.role === 'assistant'?item.content?.response:item.content?.message}</Markdown>
+                            <Markdown remarkPlugins={[remarkGfm]} id={`message-${index}`}
+                                      children={item.content?.message}
+                                      components={{
+                                        code(props) {
+                                          const {children, className, node, ...rest} = props
+                                          const match = /language-(\w+)/.exec(className || '')
+                                          return match ? (
+                                            <div style={{position: 'relative'}}>
+                                            <SyntaxHighlighter
+                                              {...rest}
+                                              PreTag="div"
+                                              children={String(children).replace(/\n$/, '')}
+                                              language={match[1]}
+                                              style={dark}
+                                            />
+                                            <div style={{position: 'absolute', top: '0.2rem', right: '0.2rem'}}>
+                                              <Tooltip title={`Copy code: ${match[1]}`}>
+                                                <a style={{color: 'white'}} onClick={() => copyCode(children)}>{<CopyOutlined />}</a>
+                                              </Tooltip>  
+                                            </div>
+                                            </div>
+                                          ) : (
+                                            <code className={`${className} not-code`}>
+                                              {children}
+                                            </code>
+                                          )
+                                        }
+                                      }}
+                            />
                         </div>
                       </div>
                     </Flex>
@@ -160,16 +222,19 @@ const ChatBoard = () => {
                 </div>
                 })}
                 {generating && <Flex style={{width: '98%', position: 'relative', minHeight: '5rem'}}>
-                    <div style={{width:'10%'}}>
+                    <div style={{width:'10%', minWidth: '7rem'}}>
                           <Avatar src={assistant} />
                           <div>{currentModel}</div>
                     </div>
                     <div style={{width:'90%', textAlign:'left'}}>
                         <div style={{fontSize: '0.7rem', color: mainPaneParagraphColor, marginTop: '0rem', marginBottom: '0.5rem'}}>
                             {formatDate(new Date().toLocaleString())}
+                            <Spin size='small' style={{marginLeft: '0.5rem'}}/>
                         </div>
-                        <div>
+                        <div id='generating-box-parent'>
                             <Markdown remarkPlugins={[remarkGfm]}>{generatingText}</Markdown>
+                            <Spin size='small' style={{marginLeft: '0.5rem'}}/>
+                            <span id='generating-position'></span>
                         </div>
                     </div>
                 </Flex>}

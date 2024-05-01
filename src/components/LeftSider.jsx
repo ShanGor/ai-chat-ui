@@ -55,7 +55,6 @@ const LeftSider = ({collapsed=false}) => {
       const request = objectStore.getAll();
       request.onsuccess = function(event) {
         const result = event.target.result;
-        console.log(result);
         setData((result||[]).sort((a, b) => {
           return b.id - a.id;
         }))
@@ -99,6 +98,9 @@ const LeftSider = ({collapsed=false}) => {
     const request = objectStore.delete(id);
     request.onsuccess = function(event) {
       console.log('Data deleted successfully.');
+      if (id == currentChat.id) {
+        setCurrentChat({initiatedBySide: true})
+      }
       setRefreshTimes(t => t+1)
     };
     request.onerror = function(event) {
