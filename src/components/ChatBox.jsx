@@ -14,6 +14,7 @@ import Stop from '../assets/stop.svg'
 const ChatBox = ({message, setMessage, model, generating, cancelRequest, setSizeChanged, setChatHistory, responseHandler}) => {
   const [height, setHeight] = useState(2)
   const [images, setImages] = useState([])
+  const [isFocused, setIsFocused] = useState(false)
   const {messageApi} = useContext(ChatUiContext)
   const [inputFieldRef, setInputFieldRef] = useState(null)
 
@@ -57,9 +58,12 @@ const ChatBox = ({message, setMessage, model, generating, cancelRequest, setSize
 
   useEffect(()=>{
     if (message) {
-      const end = message.length;
-      inputFieldRef.setSelectionRange(end, end);
-      inputFieldRef.focus()
+      if (!isFocused){
+        const end = message.length;
+        inputFieldRef.setSelectionRange(end, end);
+        inputFieldRef.focus()
+        setIsFocused(true)
+      }
     }
   }, [message])
 
@@ -189,6 +193,8 @@ const ChatBox = ({message, setMessage, model, generating, cancelRequest, setSize
         </Tooltip>
       </div>
       <textarea style={inputStyle()} ref={el => setInputFieldRef(el)} id='chat-input-field'
+                onFocus={() => {setIsFocused(true)}}
+                onBlur={() => {setIsFocused(false)}}
                 placeholder="Send a message (CTRL+Enter)"  onKeyDown={handleKeyDown}
                 value={message} onChange={inputChanged}></textarea>
       <Flex style={{width: '4.6rem', borderRadius: '1rem', marginBottom: '0.1rem',}}>

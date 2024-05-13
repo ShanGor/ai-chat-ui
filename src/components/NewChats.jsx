@@ -11,7 +11,7 @@ const { Title } = Typography;
 const NewChats = ({setMessage}) => {
 
     const onQuickTask = (task) => {
-        setMessage(task + "\n")
+        setMessage(task)
     }
     return (
         <div>
