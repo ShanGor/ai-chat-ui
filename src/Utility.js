@@ -1,5 +1,12 @@
+let generationCancel = false;
+export const cancelGeneration = () => {
+  generationCancel = true;
+}
+
 export const fetchEvents = (url, textConsumer, data=null, headers={}, method='POST') => {
-    fetch(url, {
+  generationCancel = false
+
+  fetch(url, {
       method: method,
       headers: {...headers,
          'Content-Type': 'text/event-stream;chartset=UTF-8',
@@ -7,19 +14,24 @@ export const fetchEvents = (url, textConsumer, data=null, headers={}, method='PO
          'Cache-Control': 'no-cache'
         },
       body: data
-    })
-    .then(response => {
+  })
+  .then(response => {
       const reader = response.body.getReader()
       const textDecoder = new TextDecoder()
       const readChunk = () => {
+        if (generationCancel) {
+          reader.cancel()
+          return
+        }
+
         reader.read().then(({ value, done }) => {
-          if (done) { 
+          if (done || generationCancel) { 
             return
           }
           const text = textDecoder.decode(value)
-          if (text.startsWith('event:')) { 
+          if (text.startsWith('event:')) {
             textConsumer(text.substring('event:'.length))
-          } else if (text.startsWith('data:')) { 
+          } else if (text.startsWith('data:')) {
             textConsumer(text.substring('data:'.length))
           } else {
             textConsumer(text)
@@ -32,7 +44,7 @@ export const fetchEvents = (url, textConsumer, data=null, headers={}, method='PO
       }
       readChunk()
     })
-  }
+}
 
 /**
  * In HTML, the image data is like 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEA...', however ollama only accepts the base64 data without the 'data:' prefix.

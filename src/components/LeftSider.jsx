@@ -89,13 +89,26 @@ const LeftSider = ({collapsed=false}) => {
     const request = objectStore.delete(id);
     request.onsuccess = function(event) {
       console.log('Data deleted successfully.');
-      if (id == currentChat.id) {
+      if (id == currentChat?.id) {
         setCurrentChat({initiatedBySide: true})
       }
       setRefreshTimes(t => t+1)
     };
     request.onerror = function(event) {
       console.error('Failed to delete data from IndexedDB.');
+    }
+  }
+
+  const clearHistory = () => {
+    if (!chatDb) {
+      console.error(`IndexedDB is not ready yet, cannot clear data.`);
+      return
+    }
+    const objectStore = chatDb.transaction('chat', "readwrite").objectStore('chat');
+    const request = objectStore.clear();
+    request.onsuccess = function(event) {
+      console.log('Data cleared successfully.')
+      setRefreshTimes(t => t+1)
     }
   }
 
@@ -143,7 +156,7 @@ const LeftSider = ({collapsed=false}) => {
         <li className='chat-history' key='clear'>
           <div style={{marginTop: '0.5rem'}}>
           <Tooltip title='Clear all the history items'>
-            <Popconfirm title='Confirm to clear?'>
+            <Popconfirm title='Confirm to clear?' onConfirm={clearHistory}>
               <Button type="text" style={{color:'white'}} size="small" icon={<ClearOutlined />}>Clear</Button>
             </Popconfirm>
           </Tooltip>

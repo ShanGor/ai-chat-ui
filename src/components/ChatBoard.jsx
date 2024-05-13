@@ -14,7 +14,7 @@ import {Prism as SyntaxHighlighter} from 'react-syntax-highlighter'
 import dark from 'react-syntax-highlighter/dist/esm/styles/prism/one-dark'
 import NewChats from "./NewChats";
 import GeneratingResponseSection from "./GeneratingResponseSection";
-import { abbr, formatDate } from "../Utility";
+import { abbr, cancelGeneration, formatDate } from "../Utility";
 
 let generatingTextCache = ''
 let generatingBoxHeightCache=0
@@ -30,6 +30,7 @@ const ChatBoard = () => {
     const [chatboxTop, setChatboxTop] = useState(0)
     const [selectModeBottom, setSelectModeBottom] = useState(0)
     const [contentPaneHeight, setContentPaneHeight] = useState('70vh')
+    const [requestId, setRequestId] = useState('')
 
     useEffect(() => {
         fetch(`${import.meta.env.VITE_API_URL}/api/tags`).then(res => res.json()).then(data => {
@@ -82,6 +83,20 @@ const ChatBoard = () => {
         
     }
 
+    const cancelRequest = () => {
+        cancelGeneration()
+
+        fetch(`${import.meta.env.VITE_API_URL}/api/cancel/${requestId}`).then(resp => {
+          if (resp.status === 200) {
+            console.log('Request cancelled')
+          }
+        }).then(()=>setTimeout(() => {
+            setGenerating(false)
+            setGeneratingText('')
+        }, 100))
+        
+    }
+
     const setSizeChanged = () => {
         // console.log('size changed, pls check')
         setChatboxTop(document.getElementById('chat-box-parent').getBoundingClientRect().top)
@@ -90,6 +105,11 @@ const ChatBoard = () => {
     const responseHandler = (data) => {
         // console.log("got data", data)
         setGenerating(true)
+
+        if (data?.id) {
+            setRequestId(data.id)
+            generatingTextCache = ''
+        }
 
         if (data?.message?.content) {
             generatingTextCache += data.message.content
@@ -212,6 +232,8 @@ const ChatBoard = () => {
           <ChatBox message={message} model={currentModel}
                    setMessage={setMessage} setChatHistory={setChatHistory}
                    responseHandler={responseHandler}
+                   generating={generating}
+                   cancelRequest={cancelRequest}
                    setSizeChanged={setSizeChanged}/>
         </div>
     </div>

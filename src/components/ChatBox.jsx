@@ -8,9 +8,10 @@ import {
 import "./ChatBox.css"
 import Microphone from "../assets/microphone.svg"
 import { ChatUiContext, mainPaneParagraphColor } from "../App"
-import { fetchEvents, trimImageMeta } from "../Utility";
+import { fetchEvents, trimImageMeta } from "../Utility"
+import Stop from '../assets/stop.svg'
 
-const ChatBox = ({message, setMessage, model, setSizeChanged, setChatHistory, responseHandler}) => {
+const ChatBox = ({message, setMessage, model, generating, cancelRequest, setSizeChanged, setChatHistory, responseHandler}) => {
   const [height, setHeight] = useState(2)
   const [images, setImages] = useState([])
   const {messageApi} = useContext(ChatUiContext)
@@ -95,7 +96,12 @@ const ChatBox = ({message, setMessage, model, setSizeChanged, setChatHistory, re
 
     fetchEvents(`${import.meta.env.VITE_API_URL}/chat/ollama`, (text) => {
       // console.log("got text", text)
-      responseHandler(JSON.parse(text))
+      try {
+        let o = JSON.parse(text)
+        responseHandler(o)
+      } catch(e) {
+        console.log("error parsing", text, e)
+      }
     }, JSON.stringify(request))
   }
 
@@ -191,12 +197,17 @@ const ChatBox = ({message, setMessage, model, setSizeChanged, setChatHistory, re
             <img src={Microphone} alt="Microphone" style={{width: '1.5rem', marginLeft: '0.2rem', marginTop: '0.4rem'}} />
           </a>
         </Tooltip>
+        {generating? 
+        <a onClick={cancelRequest}><img src={Stop} alt="Stop" style={{width: '1.5rem', marginLeft: '0.2rem', marginTop: '0.3rem'}} /></a>
+        :
         <Tooltip title={gotSomeMessage() ? 'Send message' : 'Please enter a message'}>
-          <Button shape="circle" type="text" disabled={!gotSomeMessage()}
-                  onClick={submitMessage}
-                  className={gotSomeMessage()?'send-button-valid':'send-button-invalid'}
-                  icon={<ArrowUpOutlined />} />
-        </Tooltip>
+        <Button shape="circle" type="text" disabled={!gotSomeMessage()}
+                onClick={submitMessage}
+                className={gotSomeMessage()?'send-button-valid':'send-button-invalid'}
+                icon={<ArrowUpOutlined />} />
+      </Tooltip>
+        }
+
       </Flex>
     </Flex>
     </div>

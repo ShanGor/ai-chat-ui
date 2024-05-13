@@ -1,8 +1,6 @@
-import {Select, Divider, Avatar, Flex, Spin, Tooltip, Image } from "antd"
-import { useState, useEffect, useContext } from "react"
+import {Button, Avatar, Flex, Spin} from "antd"
 import { ChatUiContext, mainPaneParagraphColor } from "../App"
 import {
-    CopyOutlined,
     ReloadOutlined,
   } from '@ant-design/icons';
 import "./MarkdownCustom.css"
@@ -12,7 +10,8 @@ import remarkGfm from 'remark-gfm'
 import { formatDate } from "../Utility";
 
 const GeneratingResponseSection = ({generatingText, currentModel}) => {
-    return (<div>
+  
+  return (<div>
         <Flex style={{width: '98%', position: 'relative', minHeight: '5rem'}}>
             <div style={{width:'10%', minWidth: '7rem'}}>
                   <Avatar src={assistant} />
@@ -26,7 +25,6 @@ const GeneratingResponseSection = ({generatingText, currentModel}) => {
                 <div id='generating-box-parent'>
                     <Markdown remarkPlugins={[remarkGfm]}>{generatingText}</Markdown>
                     <Spin style={{marginLeft: '0.5rem'}}
-                          tipe='Generating..'
                           indicator={
                             <ReloadOutlined
                               style={{
@@ -40,7 +38,7 @@ const GeneratingResponseSection = ({generatingText, currentModel}) => {
                 </div>
             </div>
         </Flex>
-    </div>)
+  </div>)
 }
 
 export default GeneratingResponseSection;
