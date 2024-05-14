@@ -50,7 +50,7 @@ function App() {
             </Sider>
             <Content style={{color: mainPaneBgColor,
               marginTop: '2rem', marginLeft: `${collapsed? '0.5rem' : '15rem'}`, paddingLeft: '0.5rem', paddingTop: '0.5rem'}}>
-              <ChatBoard/>
+              <ChatBoard collapsed={collapsed}/>
             </Content>
           </Layout>
         </Content>

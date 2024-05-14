@@ -11,7 +11,7 @@ import { ChatUiContext, mainPaneParagraphColor } from "../App"
 import { fetchEvents, trimImageMeta } from "../Utility"
 import Stop from '../assets/stop.svg'
 
-const ChatBox = ({message, setMessage, model, generating, cancelRequest, setSizeChanged, setChatHistory, responseHandler}) => {
+const ChatBox = ({message, setMessage, width='80%', model, generating, cancelRequest, setSizeChanged, setChatHistory, responseHandler}) => {
   const [height, setHeight] = useState(2)
   const [images, setImages] = useState([])
   const [isFocused, setIsFocused] = useState(false)
@@ -166,6 +166,12 @@ const ChatBox = ({message, setMessage, model, generating, cancelRequest, setSize
     reader.readAsDataURL(selected);
   }
 
+  const getLeftWidth = () => {
+    let boxWidth = document.getElementById('chatbox-div').getBoundingClientRect().width;
+    let totalWidth = boxWidth / 0.9
+    return Math.round((totalWidth - boxWidth) / 2) - 12
+  }
+
   const imageCard = (image, index) => {
     return (<div className="image-card" key={index}>
       <div style={{paddingTop: '0.5rem',}}>
@@ -178,7 +184,7 @@ const ChatBox = ({message, setMessage, model, generating, cancelRequest, setSize
     </div>)
   }
 
-  return (<div style={{marginTop: '1rem'}}>
+  return (<div style={{marginTop: '1rem', width: width, marginLeft: `${getLeftWidth()}px`}} id='chatbox-div'>
     <input type="file" id="chat-box-file-picker" onChange={handleImageSelected} style={{display: 'none'}}></input>
     <div className="center" style={{border: '1px solid #ccc', width: '95%', borderRadius: '1rem', backgroundColor: 'white', }}>
       <div style={{width: '100%', borderRadius: '1rem', display: `${images.length > 0 ? 'block' : 'none'}`}}>

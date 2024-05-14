@@ -1,8 +1,10 @@
-import {Select, Divider, Avatar, Flex, Tooltip, Image } from "antd"
+import {Select, Divider, Avatar, Flex, Tooltip, Image, Button } from "antd"
 import { useState, useEffect, useContext } from "react"
 import { ChatUiContext, mainPaneParagraphColor } from "../App"
 import {
     CopyOutlined,
+    EditOutlined,
+    RedoOutlined,
   } from '@ant-design/icons';
 import "./MarkdownCustom.css"
 import ChatBox from "./ChatBox";
@@ -19,7 +21,7 @@ import { abbr, cancelGeneration, formatDate } from "../Utility";
 let generatingTextCache = ''
 let generatingBoxHeightCache=0
 
-const ChatBoard = () => {
+const ChatBoard = ({collapsed}) => {
     const [models, setModels] = useState([])
     const [currentModel, setCurrentModel] = useState(null)
     const [message, setMessage] = useState('')
@@ -31,6 +33,7 @@ const ChatBoard = () => {
     const [selectModeBottom, setSelectModeBottom] = useState(0)
     const [contentPaneHeight, setContentPaneHeight] = useState('70vh')
     const [requestId, setRequestId] = useState('')
+    const [chatboxWidth, setChatboxWidth] = useState('90%')
 
     useEffect(() => {
         fetch(`${import.meta.env.VITE_API_URL}/api/tags`).then(res => res.json()).then(data => {
@@ -67,6 +70,16 @@ const ChatBoard = () => {
         }
     }, [chatboxTop, selectModeBottom])
 
+    useEffect(() => {
+        let mainPane = document.getElementById('chat-board-main')
+        if (mainPane) {
+            let totalWidth = mainPane.getBoundingClientRect().width
+            let targetWidth = `${Math.round(totalWidth * 0.9)}px`
+            setChatboxWidth(targetWidth)
+            console.log("target width is", targetWidth)
+        }
+    }, [collapsed])
+
     const modelChange = (value) => {
         localStorage.setItem('model', value)
         setCurrentModel(value)
@@ -80,7 +93,20 @@ const ChatBoard = () => {
                 
             })
         })
-        
+    }
+
+    const isLastQuestion = (index) => {
+        let lastIndex = chatHistory.length - 1
+        if (index == lastIndex) {
+            if (chatHistory[index].role=='user') {
+                return true
+            }
+        } else if (index == lastIndex - 1) {
+            if (chatHistory[lastIndex].role=='assistant' && chatHistory[index].role=='user') {
+                return true
+            }
+        } 
+        return false
     }
 
     const cancelRequest = () => {
@@ -143,7 +169,7 @@ const ChatBoard = () => {
         }
     }
 
-    return (<div className="center">
+    return (<div className="center" id='chat-board-main'>
         <div style={{top: '2.65rem', left: '16rem', position: 'fixed', width: '80%'}} ref={(el) => {
             if (el) {
                 setSelectModeBottom(el.getBoundingClientRect().bottom);
@@ -214,6 +240,16 @@ const ChatBoard = () => {
                                       }}
                             />
                         </div>
+                        {isLastQuestion(index) ? <div style={{position: 'relative'}}>
+                            <Flex style={{position: 'absolute', bottom: '-1.4rem', left: '0px'}} gap='small'>
+                                <Tooltip title="Edit">
+                                    <Button type="dashed" size="small" shape='circle' icon={<EditOutlined />} />
+                                </Tooltip>
+                                <Tooltip title="Regenerate">
+                                    <Button type="dashed" size="small" shape='circle' icon={<RedoOutlined />} />
+                                </Tooltip>
+                            </Flex>
+                        </div> : <></>}
                       </div>
                     </Flex>
                     <Divider></Divider>
@@ -224,12 +260,12 @@ const ChatBoard = () => {
             <NewChats setMessage={setMessage}/>}
         </div>
         
-        <div style={{position: 'fixed', bottom: '0', width: '80%', margin: '0 auto'}} id='chat-box-parent' ref={(el) => {
+        <div style={{position: 'fixed', bottom: '0', width: '100%'}} id='chat-box-parent' ref={(el) => {
             if (el) {
                 setChatboxTop(el.getBoundingClientRect().top);
             }
         }}>
-          <ChatBox message={message} model={currentModel}
+          <ChatBox message={message} model={currentModel} width={chatboxWidth}
                    setMessage={setMessage} setChatHistory={setChatHistory}
                    responseHandler={responseHandler}
                    generating={generating}
