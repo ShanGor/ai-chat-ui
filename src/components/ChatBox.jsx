@@ -104,7 +104,8 @@ const ChatBox = ({message, setMessage, width='80%', model, generating, cancelReq
         let o = JSON.parse(text)
         responseHandler(o)
       } catch(e) {
-        console.log("error parsing", text, e)
+        console.log("error parsing", text)
+        console.log("error details: ", e)
       }
     }, JSON.stringify(request))
   }
@@ -167,7 +168,7 @@ const ChatBox = ({message, setMessage, width='80%', model, generating, cancelReq
   }
 
   const getLeftWidth = () => {
-    let boxWidth = document.getElementById('chatbox-div').getBoundingClientRect().width;
+    let boxWidth = document.getElementById('chatbox-div')?.getBoundingClientRect().width;
     let totalWidth = boxWidth / 0.9
     return Math.round((totalWidth - boxWidth) / 2) - 12
   }

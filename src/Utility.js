@@ -29,13 +29,15 @@ export const fetchEvents = (url, textConsumer, data=null, headers={}, method='PO
             return
           }
           const text = textDecoder.decode(value)
-          if (text.startsWith('event:')) {
-            textConsumer(text.substring('event:'.length))
-          } else if (text.startsWith('data:')) {
-            textConsumer(text.substring('data:'.length))
-          } else {
-            textConsumer(text)
-          }
+          text.split('\n').forEach(line => {
+            if (line.startsWith('event:')) {
+              textConsumer(line.substring('event:'.length))
+            } else if (line.startsWith('data:')) {
+              textConsumer(line.substring('data:'.length))
+            } else {
+              if (line !== '') textConsumer(line)
+            }
+          })
           
           readChunk()
         }).catch(error => {
