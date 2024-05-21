@@ -11,6 +11,7 @@ import { ChatUiContext, mainPaneParagraphColor } from "../App"
 import { fetchEvents, trimImageMeta } from "../Utility"
 import Stop from '../assets/stop.svg'
 
+// eslint-disable-next-line react/prop-types
 const ChatBox = ({message, setMessage, width='80%', model, generating, cancelRequest, setSizeChanged, setChatHistory, responseHandler}) => {
   const [height, setHeight] = useState(2)
   const [images, setImages] = useState([])
