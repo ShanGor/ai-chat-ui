@@ -1,3 +1,4 @@
+/* eslint-disable react/prop-types */
 import {Button, Tooltip, Flex } from "antd"
 import { useContext, useEffect, useState } from "react"
 import {
@@ -11,8 +12,7 @@ import { ChatUiContext, mainPaneParagraphColor } from "../App"
 import { fetchEvents, trimImageMeta } from "../Utility"
 import Stop from '../assets/stop.svg'
 
-// eslint-disable-next-line react/prop-types
-const ChatBox = ({message, setMessage, width='80%', model, generating, cancelRequest, setSizeChanged, setChatHistory, responseHandler}) => {
+const ChatBox = ({message, setMessage, useRag, setUseRag, width='80%', model, generating, cancelRequest, setSizeChanged, setChatHistory, responseHandler}) => {
   const [height, setHeight] = useState(2)
   const [images, setImages] = useState([])
   const [isFocused, setIsFocused] = useState(false)
@@ -34,22 +34,38 @@ const ChatBox = ({message, setMessage, width='80%', model, generating, cancelReq
         content: 'Please select a model before sending messages',
       });
     } else {
-      setChatHistory(hist => {
-        let newHist = [...hist, {
-          role: 'user',
-          content: {
-            created_at: new Date().toLocaleString(),
-            message: message.trim(),
-            model: model
-          },
-          images: images
-        }]
-        responseHandler({})
-        triggerAiChatCompletion(newHist)
-        return newHist
-      })
-      setMessage('')
-      setImages([])
+      if (useRag) {
+        setChatHistory(hist => {
+          let newHist = [...hist, {
+            role: 'user',
+            content: {
+              created_at: new Date().toLocaleString(),
+              message: message?.trim(),
+              model: model
+            },
+            images: images
+          }]
+          triggerAiChatCompletionWithRag(newHist)
+          return newHist
+        })
+      } else {
+        setChatHistory(hist => {
+          let newHist = [...hist, {
+            role: 'user',
+            content: {
+              created_at: new Date().toLocaleString(),
+              message: message?.trim(),
+              model: model
+            },
+            images: images
+          }]
+          responseHandler({})
+          triggerAiChatCompletion(newHist)
+          return newHist
+        })
+        setMessage('')
+        setImages([])
+      }
     }
   }
 
@@ -60,7 +76,7 @@ const ChatBox = ({message, setMessage, width='80%', model, generating, cancelReq
   useEffect(()=>{
     if (message) {
       if (!isFocused){
-        const end = message.length;
+        const end = message?.length;
         inputFieldRef.setSelectionRange(end, end);
         inputFieldRef.focus()
         setIsFocused(true)
@@ -111,6 +127,60 @@ const ChatBox = ({message, setMessage, width='80%', model, generating, cancelReq
     }, JSON.stringify(request))
   }
 
+  const triggerAiChatCompletionWithRag = (hist) => {
+    fetch(`${import.meta.env.VITE_API_URL}/api/find-embeddings/5`, {
+      method: 'POST',
+      body: message?.trim()
+    }).then(res => res.json()).then(data => {
+      messageApi.open({
+        type: 'success',
+        content: 'Get documents! Thinking and answering your question..',
+      });
+      // console.log("embeddings", data)
+      if (data) {
+        let rag_prompt = `As an AI assisnt, please answer questions by referencing below documents\n\nDocuments:\n`
+        for (let i=0; i<data.length; i++){
+          let e = data[i]
+          rag_prompt += `${e.raw_text}\n`
+        }
+        // console.log("rag_prompt", rag_prompt)
+        let messages = [{
+          role: 'system',
+          content: {
+            created_at: new Date().toLocaleString(),
+            message: rag_prompt.trim(),
+            model: model
+          },
+          images: images
+        }, ...hist]
+        responseHandler({})
+        triggerAiChatCompletion(messages)
+        setMessage('')
+        setImages([])
+        setUseRag(false)
+      } else {
+        setChatHistory(hist => {
+          let newHist = [...hist, {
+            role: 'assistant',
+            content: {
+              created_at: new Date().toLocaleString(),
+              message: 'Sorry, I am not able to find the answer to your question',
+              model: model
+            },
+            images: []
+          }]
+          return newHist
+        })
+        setMessage('')
+        setImages([])
+      }
+    })
+    messageApi.open({
+      type: 'warning',
+      content: 'Searching relevant docs by embedding..',
+    });
+  }
+
   const inputStyle = () => {
     return  {
       paddingTop: '0.5rem',
@@ -149,7 +219,7 @@ const ChatBox = ({message, setMessage, width='80%', model, generating, cancelReq
   }
 
   const gotSomeMessage = () => {
-    if (message && message.trim().length > 0) {
+    if (message && message?.trim().length > 0) {
       return true
     }
     return false

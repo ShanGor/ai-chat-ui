@@ -1,10 +1,11 @@
-import {Select, Divider, Avatar, Flex, Tooltip, Image, Button } from "antd"
+import { Checkbox, Select, Divider, Avatar, Flex, Tooltip, Image, Button } from "antd"
 import { useState, useEffect, useContext } from "react"
 import { ChatUiContext, mainPaneParagraphColor } from "../App"
 import {
     CopyOutlined,
     EditOutlined,
     RedoOutlined,
+    PlusOutlined,
   } from '@ant-design/icons';
 import "./MarkdownCustom.css"
 import ChatBox from "./ChatBox";
@@ -34,6 +35,7 @@ const ChatBoard = ({collapsed}) => {
     const [contentPaneHeight, setContentPaneHeight] = useState('70vh')
     const [requestId, setRequestId] = useState('')
     const [chatboxWidth, setChatboxWidth] = useState('90%')
+    const [useRag, setUseRag] = useState(false)
 
     useEffect(() => {
         fetch(`${import.meta.env.VITE_API_URL}/api/tags`).then(res => res.json()).then(data => {
@@ -120,12 +122,15 @@ const ChatBoard = ({collapsed}) => {
             setGenerating(false)
             setGeneratingText('')
         }, 100))
-        
     }
 
     const setSizeChanged = () => {
         // console.log('size changed, pls check')
         setChatboxTop(document.getElementById('chat-box-parent').getBoundingClientRect().top)
+    }
+
+    const toggleRag = (e) => {
+        setUseRag(e.target.checked)
     }
 
     const responseHandler = (data) => {
@@ -176,13 +181,22 @@ const ChatBoard = ({collapsed}) => {
             }
         }}>
             <Divider orientation='center'>
-                <span style={{marginRight: '0.5rem', fontSize: '1.3rem'}}>Select a model:</span>
+              <span style={{marginRight:'0.5rem'}}>
+                <Tooltip title='Create a new chat'>
+                  <Button size="middle" style={{color:'white', backgroundColor:'green'}}
+                        onClick={() => {setCurrentChat({initiatedBySide: true})}}
+                        icon={<PlusOutlined />}/>
+                </Tooltip>
+              </span>
+              <span style={{marginRight: '0.5rem', fontSize: '1.3rem'}}>Select a model:</span>
               <Select style={{width: '150px'}}
                 value={currentModel} onSelect={modelChange}
                 placeholder="from the list"
                 options={models.map(model => {
                     return {value: model.name, label: model.name}
                 })} />
+              <span style={{marginLeft: '0.5rem', marginRight: '0.5rem', fontSize: '1.2rem'}}>Include Knowledge:</span>
+              <Checkbox checked={useRag} onChange={toggleRag}/>
             </Divider>
         </div>
         <div style={{marginTop: '3.5rem', height: contentPaneHeight, width: '100%', overflowY: 'scroll', overflowX: 'hidden'}}>
@@ -266,6 +280,7 @@ const ChatBoard = ({collapsed}) => {
             }
         }}>
           <ChatBox message={message} model={currentModel} width={chatboxWidth}
+                   useRag={useRag} setUseRag={setUseRag}
                    setMessage={setMessage} setChatHistory={setChatHistory}
                    responseHandler={responseHandler}
                    generating={generating}
