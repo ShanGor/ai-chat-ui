@@ -155,7 +155,7 @@ const ChatBoard = ({ collapsed }) => {
       );
   };
 
-  const gotSomeMessage = () => {
+  const gotSomeMessage = (message) => {
     if (message && message?.trim().length > 0) {
       return true;
     }
@@ -173,19 +173,19 @@ const ChatBoard = ({ collapsed }) => {
     setUseRag(e.target.checked);
   };
 
-  const regenerateResult = () => {
-    let idx = history.length - 1;
-    let newHist = [];
-    if (history[idx].role == "user") {
-      // do something
-      history.map((o) => newHist.push(o));
-    } else {
-      history.slice(0, idx).map((o) => newHist.push(o));
+  const regenerateResult = (idx) => {
+    let msg = chatHistory[idx].content.message
+    let img = []
+    if (chatHistory[idx].content.images && chatHistory[idx].content.images.length > 0) {
+      img = chatHistory[idx].content.images
     }
+    chatHistory.splice(0, idx)
+    setChatHistory(hist => hist.slice(0, idx))
+    setTimeout(() => {submitMessage(msg, img)}, 10)
   };
 
-  const submitMessage = () => {
-    if (!gotSomeMessage()) {
+  const submitMessage = (message, images) => {
+    if (!gotSomeMessage(message)) {
       messageApi.open({
         type: "error",
         content: "Please enter a message before sending",
@@ -280,7 +280,7 @@ const ChatBoard = ({ collapsed }) => {
     );
   };
 
-  const triggerAiChatCompletionWithRag = (hist) => {
+  const triggerAiChatCompletionWithRag = (hist, message, images) => {
     fetch(`${import.meta.env.VITE_API_URL}/api/find-embeddings/5`, {
       method: "POST",
       body: message?.trim(),
@@ -584,7 +584,7 @@ const ChatBoard = ({ collapsed }) => {
                                 type="dashed"
                                 size="small"
                                 shape="circle"
-                                onClick={regenerateResult}
+                                onClick={() => {regenerateResult(index)}}
                                 icon={<RedoOutlined />}
                               />
                             </Tooltip>

@@ -1,6 +1,6 @@
 /* eslint-disable react/prop-types */
 import {Button, Tooltip, Flex } from "antd"
-import { useContext, useEffect, useState } from "react"
+import { useEffect, useState } from "react"
 import {
     PlusOutlined,
     ArrowUpOutlined,
@@ -137,10 +137,10 @@ const ChatBox = ({message, setMessage, images, setImages, gotSomeMessage, submit
         {generating? 
         <a onClick={cancelRequest}><img src={Stop} alt="Stop" style={{width: '1.5rem', marginLeft: '0.2rem', marginTop: '0.3rem'}} /></a>
         :
-        <Tooltip title={gotSomeMessage() ? 'Send message' : 'Please enter a message'}>
-        <Button shape="circle" type="text" disabled={!gotSomeMessage()} id='submit-messsage'
-                onClick={submitMessage}
-                className={gotSomeMessage()?'send-button-valid':'send-button-invalid'}
+        <Tooltip title={gotSomeMessage(message) ? 'Send message' : 'Please enter a message'}>
+        <Button shape="circle" type="text" disabled={!gotSomeMessage(message)} id='submit-messsage'
+                onClick={() => {submitMessage(message, images)}}
+                className={gotSomeMessage(message)?'send-button-valid':'send-button-invalid'}
                 icon={<ArrowUpOutlined />} />
       </Tooltip>
         }
