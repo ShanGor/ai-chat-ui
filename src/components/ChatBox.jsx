@@ -8,67 +8,15 @@ import {
   } from '@ant-design/icons';
 import "./ChatBox.css"
 import Microphone from "../assets/microphone.svg"
-import { ChatUiContext, mainPaneParagraphColor } from "../App"
-import { fetchEvents, trimImageMeta } from "../Utility"
+import { mainPaneParagraphColor } from "../App"
 import Stop from '../assets/stop.svg'
 
-const ChatBox = ({message, setMessage, useRag, setUseRag, width='80%', model, generating, cancelRequest, setSizeChanged, setChatHistory, responseHandler}) => {
+const ChatBox = ({message, setMessage, images, setImages, gotSomeMessage, submitMessage, width='80%', generating, cancelRequest, setSizeChanged}) => {
   const [height, setHeight] = useState(2)
-  const [images, setImages] = useState([])
   const [isFocused, setIsFocused] = useState(false)
-  const {messageApi} = useContext(ChatUiContext)
   const [inputFieldRef, setInputFieldRef] = useState(null)
 
-  const submitMessage = ()=> {
-    if (!gotSomeMessage()) {
-      messageApi.open({
-        type: 'error',
-        content: 'Please enter a message before sending',
-      });
-      return
-    }
-
-    if (!model) {
-      messageApi.open({
-        type: 'error',
-        content: 'Please select a model before sending messages',
-      });
-    } else {
-      if (useRag) {
-        setChatHistory(hist => {
-          let newHist = [...hist, {
-            role: 'user',
-            content: {
-              created_at: new Date().toLocaleString(),
-              message: message?.trim(),
-              model: model
-            },
-            images: images
-          }]
-          triggerAiChatCompletionWithRag(newHist)
-          return newHist
-        })
-      } else {
-        setChatHistory(hist => {
-          let newHist = [...hist, {
-            role: 'user',
-            content: {
-              created_at: new Date().toLocaleString(),
-              message: message?.trim(),
-              model: model
-            },
-            images: images
-          }]
-          responseHandler({})
-          triggerAiChatCompletion(newHist)
-          return newHist
-        })
-        setMessage('')
-        setImages([])
-      }
-    }
-  }
-
+  
   useEffect(()=>{
     setSizeChanged()
   }, [images])
@@ -92,94 +40,6 @@ const ChatBox = ({message, setMessage, useRag, setUseRag, width='80%', model, ge
     }
   }
 
-
-  const triggerAiChatCompletion = (hist) => {
-    let request
-    if (hist.length > 0) {
-      let requestMessages = []
-      hist.map(o => {
-        let msg = {
-          role: o.role,
-          content: o.content.message
-        }
-        if (o.images) {
-          msg.images = trimImageMeta(o.images)
-        }
-        requestMessages.push(msg)
-      })
-      request = {
-        model: model,
-        messages: requestMessages,
-        stream: true
-      }
-
-    }
-
-    fetchEvents(`${import.meta.env.VITE_API_URL}/chat/ollama`, (text) => {
-      // console.log("got text", text)
-      try {
-        let o = JSON.parse(text)
-        responseHandler(o)
-      } catch(e) {
-        console.log("error parsing", text)
-        console.log("error details: ", e)
-      }
-    }, JSON.stringify(request))
-  }
-
-  const triggerAiChatCompletionWithRag = (hist) => {
-    fetch(`${import.meta.env.VITE_API_URL}/api/find-embeddings/5`, {
-      method: 'POST',
-      body: message?.trim()
-    }).then(res => res.json()).then(data => {
-      messageApi.open({
-        type: 'success',
-        content: 'Get documents! Thinking and answering your question..',
-      });
-      // console.log("embeddings", data)
-      if (data) {
-        let rag_prompt = `As an AI assisnt, please answer questions by referencing below documents\n\nDocuments:\n`
-        for (let i=0; i<data.length; i++){
-          let e = data[i]
-          rag_prompt += `${e.raw_text}\n`
-        }
-        // console.log("rag_prompt", rag_prompt)
-        let messages = [{
-          role: 'system',
-          content: {
-            created_at: new Date().toLocaleString(),
-            message: rag_prompt.trim(),
-            model: model
-          },
-          images: images
-        }, ...hist]
-        responseHandler({})
-        triggerAiChatCompletion(messages)
-        setMessage('')
-        setImages([])
-        setUseRag(false)
-      } else {
-        setChatHistory(hist => {
-          let newHist = [...hist, {
-            role: 'assistant',
-            content: {
-              created_at: new Date().toLocaleString(),
-              message: 'Sorry, I am not able to find the answer to your question',
-              model: model
-            },
-            images: []
-          }]
-          return newHist
-        })
-        setMessage('')
-        setImages([])
-      }
-    })
-    messageApi.open({
-      type: 'warning',
-      content: 'Searching relevant docs by embedding..',
-    });
-  }
 
   const inputStyle = () => {
     return  {
@@ -216,13 +76,6 @@ const ChatBox = ({message, setMessage, useRag, setUseRag, width='80%', model, ge
   const removeImage = (index) => {
     setImages(images.filter((_, idx) => idx !== index))
     document.getElementById("chat-box-file-picker").value=null
-  }
-
-  const gotSomeMessage = () => {
-    if (message && message?.trim().length > 0) {
-      return true
-    }
-    return false
   }
 
   const handleImageSelected = () => {
@@ -285,7 +138,7 @@ const ChatBox = ({message, setMessage, useRag, setUseRag, width='80%', model, ge
         <a onClick={cancelRequest}><img src={Stop} alt="Stop" style={{width: '1.5rem', marginLeft: '0.2rem', marginTop: '0.3rem'}} /></a>
         :
         <Tooltip title={gotSomeMessage() ? 'Send message' : 'Please enter a message'}>
-        <Button shape="circle" type="text" disabled={!gotSomeMessage()}
+        <Button shape="circle" type="text" disabled={!gotSomeMessage()} id='submit-messsage'
                 onClick={submitMessage}
                 className={gotSomeMessage()?'send-button-valid':'send-button-invalid'}
                 icon={<ArrowUpOutlined />} />

@@ -132,7 +132,7 @@ const LeftSider = ({collapsed=false}) => {
           <Flex>
             <div style={{width: '90%'}}>
               <Tooltip title={item.name}>
-              {abbr(item.name, 28)}
+              {abbr(item.name, 25)}
               </Tooltip>
             </div>
             <Flex style={{width: '10%'}} justify='flex-end' align="flex-end">

@@ -3,6 +3,12 @@ export const cancelGeneration = () => {
   generationCancel = true;
 }
 
+export const clearArray = (array) => {
+  if (!array && array.length > 0) {
+    array.splice(0, array.length)
+  }
+}
+
 export const fetchEvents = (url, textConsumer, data=null, headers={}, method='POST') => {
   generationCancel = false
 
