@@ -9,6 +9,13 @@ export const clearArray = (array) => {
   }
 }
 
+export const textNotEmpty = (message) => {
+  if (message && message?.trim().length > 0) {
+    return true;
+  }
+  return false;
+};
+
 export const fetchEvents = (url, textConsumer, data=null, headers={}, method='POST') => {
   generationCancel = false
 

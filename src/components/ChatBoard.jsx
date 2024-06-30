@@ -6,7 +6,9 @@ import {
   Flex, Popover,
   Tooltip,
   Image,
+  Input,
   Button,
+  Modal,
 } from "antd";
 import { useState, useEffect, useContext } from "react";
 import { ChatUiContext, mainPaneParagraphColor } from "../App";
@@ -32,6 +34,7 @@ import {
   clearArray,
   fetchEvents,
   formatDate,
+  textNotEmpty,
   trimImageMeta,
 } from "../Utility";
 
@@ -55,6 +58,10 @@ const ChatBoard = ({ collapsed }) => {
   const [chatboxWidth, setChatboxWidth] = useState("90%");
   const [useRag, setUseRag] = useState(false);
   const [images, setImages] = useState([]);
+  // edit last question message
+  const [editQuestionModalOpen, setEditQuestionModalOpen] = useState(false)
+  const [editMessage, setEditMessage] = useState("")
+  const [editMessageIndex, setEditMessageIndex] = useState(-1)
 
   useEffect(() => {
     fetch(`${import.meta.env.VITE_API_URL}/api/tags`)
@@ -155,12 +162,6 @@ const ChatBoard = ({ collapsed }) => {
       );
   };
 
-  const gotSomeMessage = (message) => {
-    if (message && message?.trim().length > 0) {
-      return true;
-    }
-    return false;
-  };
 
   const setSizeChanged = () => {
     // console.log('size changed, pls check')
@@ -184,8 +185,20 @@ const ChatBoard = ({ collapsed }) => {
     setTimeout(() => {submitMessage(msg, img)}, 10)
   };
 
+  const editLastQuestion = (idx) => {
+    setEditMessage(chatHistory[idx].content.message)
+    setEditQuestionModalOpen(true)
+    setEditMessageIndex(idx)
+  }
+  const handleEditLastQuestionOk = () => {
+    let newHist = [...chatHistory]
+    newHist[editMessageIndex].content.message = editMessage
+    setChatHistory(newHist)
+    setEditQuestionModalOpen(false)
+  }
+
   const submitMessage = (message, images) => {
-    if (!gotSomeMessage(message)) {
+    if (!textNotEmpty(message)) {
       messageApi.open({
         type: "error",
         content: "Please enter a message before sending",
@@ -572,21 +585,10 @@ const ChatBoard = ({ collapsed }) => {
                             gap="small"
                           >
                             <Tooltip title="Edit">
-                              <Button
-                                type="dashed"
-                                size="small"
-                                shape="circle"
-                                icon={<EditOutlined />}
-                              />
+                              <Button type="dashed" size="small" shape="circle" onClick={() => {editLastQuestion(index)}} icon={<EditOutlined />} />
                             </Tooltip>
                             <Tooltip title="Regenerate">
-                              <Button
-                                type="dashed"
-                                size="small"
-                                shape="circle"
-                                onClick={() => {regenerateResult(index)}}
-                                icon={<RedoOutlined />}
-                              />
+                              <Button type="dashed" size="small" shape="circle" onClick={() => {regenerateResult(index)}} icon={<RedoOutlined />} />
                             </Tooltip>
                           </Flex>
                         </div>
@@ -625,7 +627,6 @@ const ChatBoard = ({ collapsed }) => {
           setMessage={setMessage}
           images={images}
           setImages={setImages}
-          gotSomeMessage={gotSomeMessage}
           submitMessage={submitMessage}
           width={chatboxWidth}
           generating={generating}
@@ -634,6 +635,9 @@ const ChatBoard = ({ collapsed }) => {
           setSizeChanged={setSizeChanged}
         />
       </div>
+      <Modal title="Edit Question" open={editQuestionModalOpen} onOk={handleEditLastQuestionOk} onCancel={() => {setEditQuestionModalOpen(false)}} okText="Save" cancelText="Cancel">
+        <Input.TextArea rows={4} value={editMessage} onChange={(e) => setEditMessage(e.target.value)} />
+      </Modal>
     </div>
   );
 };

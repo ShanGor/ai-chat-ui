@@ -10,8 +10,9 @@ import "./ChatBox.css"
 import Microphone from "../assets/microphone.svg"
 import { mainPaneParagraphColor } from "../App"
 import Stop from '../assets/stop.svg'
+import { textNotEmpty } from "../Utility";
 
-const ChatBox = ({message, setMessage, images, setImages, gotSomeMessage, submitMessage, width='80%', generating, cancelRequest, setSizeChanged}) => {
+const ChatBox = ({message, setMessage, images, setImages, submitMessage, width='80%', generating, cancelRequest, setSizeChanged}) => {
   const [height, setHeight] = useState(2)
   const [isFocused, setIsFocused] = useState(false)
   const [inputFieldRef, setInputFieldRef] = useState(null)
@@ -83,12 +84,18 @@ const ChatBox = ({message, setMessage, images, setImages, gotSomeMessage, submit
       return;
     }
     let selected = document.getElementById("chat-box-file-picker").files[0];
+    let fileName = selected.name
+    console.log("selected file name: ", fileName)
     let reader = new FileReader();
-    reader.addEventListener("loadend", () => {
-      let data = reader.result;
-      setImages([...images, data]);
-    });
-    reader.readAsDataURL(selected);
+    if (fileName.endsWith('.pdf')) {
+      // read pdf as text
+    } else {
+      reader.addEventListener("loadend", () => {
+        let data = reader.result;
+        setImages([...images, data]);
+      });
+      reader.readAsDataURL(selected);
+    }
   }
 
   const getLeftWidth = () => {
@@ -110,7 +117,8 @@ const ChatBox = ({message, setMessage, images, setImages, gotSomeMessage, submit
   }
 
   return (<div style={{marginTop: '1rem', width: width, marginLeft: `${getLeftWidth()}px`}} id='chatbox-div'>
-    <input type="file" id="chat-box-file-picker" onChange={handleImageSelected} style={{display: 'none'}}></input>
+    <input type="file" accept=".pdf,.png,.jpg,.jpeg,.gif,.bmp"
+           id="chat-box-file-picker" onChange={handleImageSelected} style={{display: 'none'}} />
     <div className="center" style={{border: '1px solid #ccc', width: '95%', borderRadius: '1rem', backgroundColor: 'white', }}>
       <div style={{width: '100%', borderRadius: '1rem', display: `${images.length > 0 ? 'block' : 'none'}`}}>
         <Flex style={{marginBottom: '0.5rem', marginLeft: '0.5rem'}} gap='small' wrap="wrap">
@@ -137,10 +145,10 @@ const ChatBox = ({message, setMessage, images, setImages, gotSomeMessage, submit
         {generating? 
         <a onClick={cancelRequest}><img src={Stop} alt="Stop" style={{width: '1.5rem', marginLeft: '0.2rem', marginTop: '0.3rem'}} /></a>
         :
-        <Tooltip title={gotSomeMessage(message) ? 'Send message' : 'Please enter a message'}>
-        <Button shape="circle" type="text" disabled={!gotSomeMessage(message)} id='submit-messsage'
+        <Tooltip title={textNotEmpty(message) ? 'Send message' : 'Please enter a message'}>
+        <Button shape="circle" type="text" disabled={!textNotEmpty(message)} id='submit-messsage'
                 onClick={() => {submitMessage(message, images)}}
-                className={gotSomeMessage(message)?'send-button-valid':'send-button-invalid'}
+                className={textNotEmpty(message)?'send-button-valid':'send-button-invalid'}
                 icon={<ArrowUpOutlined />} />
       </Tooltip>
         }
