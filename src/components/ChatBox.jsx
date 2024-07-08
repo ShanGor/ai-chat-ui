@@ -1,5 +1,5 @@
 /* eslint-disable react/prop-types */
-import {Button, Tooltip, Flex } from "antd"
+import {Button, Tooltip, Flex, Modal, Radio } from "antd"
 import { useEffect, useState } from "react"
 import {
     PlusOutlined,
@@ -11,11 +11,18 @@ import Microphone from "../assets/microphone.svg"
 import { mainPaneParagraphColor } from "../App"
 import Stop from '../assets/stop.svg'
 import { textNotEmpty } from "../Utility";
+import 'react-pdf/dist/Page/TextLayer.css';
+import 'react-pdf/dist/Page/AnnotationLayer.css';
+import { pdfjs } from 'react-pdf';
+import {getPageText} from '../PdfUtil'
 
 const ChatBox = ({message, setMessage, images, setImages, submitMessage, width='80%', generating, cancelRequest, setSizeChanged}) => {
   const [height, setHeight] = useState(2)
   const [isFocused, setIsFocused] = useState(false)
   const [inputFieldRef, setInputFieldRef] = useState(null)
+  const [showPdfOption, setShowPdfOption] = useState(false)
+  const [currentPdf, setCurrentPdf] = useState(null)
+  const [pdfOption, setPdfOption] = useState(2)
 
   
   useEffect(()=>{
@@ -37,7 +44,7 @@ const ChatBox = ({message, setMessage, images, setImages, submitMessage, width='
     if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
         // Your action when "CTRL+Enter" is pressed
         event.preventDefault(); // Prevent default action if needed
-        submitMessage()
+        submitMessage(message, images)
     }
   }
 
@@ -88,7 +95,13 @@ const ChatBox = ({message, setMessage, images, setImages, submitMessage, width='
     console.log("selected file name: ", fileName)
     let reader = new FileReader();
     if (fileName.endsWith('.pdf')) {
-      // read pdf as text
+      // read pdf as text, or read as images
+      reader.addEventListener("loadend", () => {
+        let data = reader.result;
+        setCurrentPdf(data)
+        setShowPdfOption(true)
+      });
+      reader.readAsDataURL(selected);
     } else {
       reader.addEventListener("loadend", () => {
         let data = reader.result;
@@ -96,6 +109,36 @@ const ChatBox = ({message, setMessage, images, setImages, submitMessage, width='
       });
       reader.readAsDataURL(selected);
     }
+  }
+
+  const readPdfAsImagesOrText = async() => {
+    
+      const canvas = document.getElementById('the-canvas');
+      const context = canvas.getContext('2d');
+      let pdf = await pdfjs.getDocument({url: currentPdf} ).promise
+      for (let i = 1; i <= pdf.numPages; i++) {
+        let page = await pdf.getPage(i)
+        if (pdfOption === 1) {
+          // read pdf as images
+          const viewport = page.getViewport({scale: 1});
+          canvas.height= viewport.height;
+          canvas.width= viewport.width;
+          await page.render({
+            canvasContext: context,
+            viewport: viewport,
+          }).promise;
+          setImages(old=>{return [...old, canvas.toDataURL()]});
+        } else if (pdfOption === 2) {
+          // read pdf as text
+          let text = await getPageText(page)
+          setMessage(old => `${old}\n${text}`)
+        }
+
+      }
+      setCurrentPdf(null)
+      setShowPdfOption(false)
+      setPdfOption(2)
+    
   }
 
   const getLeftWidth = () => {
@@ -157,6 +200,17 @@ const ChatBox = ({message, setMessage, images, setImages, submitMessage, width='
     </Flex>
     </div>
     <div style={{opacity: '0.7', marginTop: '0.2rem'}}>LLMs can make mistakes. Verify important information.</div>
+    <Modal title="Upload PDF as images or text?" open={showPdfOption} onOk={readPdfAsImagesOrText} onCancel={() => {setShowPdfOption(false)}} okText="Okay" cancelText="Cancel">
+      <div style={{textAlign: 'center'}}>
+        <Radio.Group onChange={(e) => {setPdfOption(e.target.value)}} value={pdfOption}>
+          <Radio value={1}>Images</Radio>
+          <Radio value={2}>Text</Radio>
+        </Radio.Group>
+      </div>
+    </Modal>
+    <div style={{display: 'none'}}>
+      <canvas id="the-canvas"></canvas>
+    </div>
   </div>)
 }
 
