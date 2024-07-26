@@ -1,5 +1,5 @@
 /* eslint-disable react/prop-types */
-import {Button, Tooltip, Flex, Modal, Radio } from "antd"
+import {Button, Tooltip, Flex, Modal, Radio, Image } from "antd"
 import { useEffect, useState } from "react"
 import {
     PlusOutlined,
@@ -150,7 +150,7 @@ const ChatBox = ({message, setMessage, images, setImages, submitMessage, width='
   const imageCard = (image, index) => {
     return (<div className="image-card" key={index}>
       <div style={{paddingTop: '0.5rem',}}>
-        <img src={image} alt="Image" style={{borderRadius: '0.5rem', width: '4rem', height: '4rem', objectFit: 'cover'}} />
+        <Image src={image} alt="Image" style={{borderRadius: '0.5rem', width: '4rem', height: '4rem', objectFit: 'cover'}} />
       </div>
       
       <div className="close-image-container">
