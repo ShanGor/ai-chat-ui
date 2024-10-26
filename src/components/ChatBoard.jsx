@@ -72,6 +72,8 @@ const ChatBoard = ({ collapsed }) => {
     if (localStorage.getItem("model")) {
       setCurrentModel(localStorage.getItem("model"));
     }
+
+    window.addEventListener("resize", onPaneSizeChanged)
   }, []);
 
   useEffect(() => {
@@ -104,7 +106,7 @@ const ChatBoard = ({ collapsed }) => {
     }
   }, [chatboxTop, selectModeBottom]);
 
-  useEffect(() => {
+  const onPaneSizeChanged = () => {
     let mainPane = document.getElementById("chat-board-main");
     if (mainPane) {
       let totalWidth = mainPane.getBoundingClientRect().width;
@@ -112,6 +114,10 @@ const ChatBoard = ({ collapsed }) => {
       setChatboxWidth(targetWidth);
       console.log("target width is", targetWidth);
     }
+  };
+
+  useEffect(() => {
+    onPaneSizeChanged()
   }, [collapsed]);
 
   const modelChange = (value) => {
