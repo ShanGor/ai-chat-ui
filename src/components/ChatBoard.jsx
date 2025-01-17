@@ -238,7 +238,7 @@ const ChatBoard = ({collapsed, auth}) => {
       let totalWidth = mainPane.getBoundingClientRect().width
       let targetWidth = `${Math.round(totalWidth * 0.9)}px`
       setChatBoxWidth(targetWidth)
-      console.log("target width is", targetWidth)
+      // console.log("target width is", targetWidth)
     }
   }
 

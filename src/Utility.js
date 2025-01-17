@@ -1,3 +1,5 @@
+const urlObject = window.URL || window.webkitURL || window;
+
 let generationCancel = false;
 export const cancelGeneration = () => {
   generationCancel = true;
@@ -123,4 +125,22 @@ export const abbr = (str, maxSize) => {
 
 export const distinct = (value, index, self) => {
       return self.indexOf(value) === index
+}
+
+export const saveJson = (obj, filename) => {
+      // if object is a list, convert to object
+      let blob
+      if (Array.isArray(obj)) {
+          blob = new Blob(obj.map(o => JSON.stringify(o) + '\n'), { type: 'application/json' })
+      } else {
+          blob = new Blob([JSON.stringify(obj)], { type: 'application/json' })
+      }
+
+      const url = urlObject.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = filename
+      link.click()
+      link.remove()
+      urlObject.revokeObjectURL(url)
 }
