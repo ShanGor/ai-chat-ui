@@ -219,12 +219,12 @@ const LeftSider = ({collapsed=false}) => {
         <ul>
           {data?.map(item => <li className='chat-history' key={item.id}>
             <Flex>
-              <div style={{width: '90%'}}>
+              <div style={{width: '70%'}}>
                 <Tooltip title={item.name}>
                   {abbr(item.name, 20)}
                 </Tooltip>
               </div>
-              <Flex style={{width: '10%'}} justify='flex-end' align="flex-end">
+              <Flex style={{width: '30%'}} justify='flex-end' align="flex-end">
               <Tooltip title='Edit/View'>
                 <Button type="text" onClick={() => {setCurrentChat({ ...item, initiatedBySide: true,})}} style={{color:'white'}} shape="circle" size="small" icon={<EditOutlined />} />
               </Tooltip>
