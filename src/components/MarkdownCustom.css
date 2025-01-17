@@ -1,0 +1,12 @@
+
+.not-code {
+    color: #1f2328;
+    font-family: var(--fontStack-monospace, ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace), serif;
+    background-color: rgba(112, 107, 107, 0.2);
+    padding: .2em .4em;
+    margin: 0;
+    font-size: 85%;
+    white-space: break-spaces;
+    /* background-color: var(--bgColor-neutral-muted, var(--color-neutral-muted)); */
+    border-radius: 6px;
+}

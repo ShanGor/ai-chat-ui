@@ -1,0 +1,6 @@
+ul .chat-history {
+    list-style-type: none; /* Remove bullets */
+    padding: 0; /* Remove padding */
+    margin-left: -2rem; /* Remove margins */
+    margin-bottom: 0.2rem
+}
