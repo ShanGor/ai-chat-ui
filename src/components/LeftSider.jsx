@@ -8,84 +8,54 @@ import {
 import { useContext, useEffect, useState } from "react"
 import './LeftSider.css'
 import { ChatUiContext } from "../App";
-import {abbr, saveJson} from "../Utility";
+import {
+  abbr,
+  saveJson
+} from "../Utility";
+import IndexedDb from "../IndexedDb"
 
 const splitLineColor = 'rgba(250,250,250,0.5)'
 
-const dbName = 'chat'
-
-let dbOpenStatus = 'waiting'
-const dbConnection = window.indexedDB.open("chats",1);
-let chatsDb
-dbConnection.onsuccess = function (event) {
-  chatsDb = dbConnection.result;
-  dbOpenStatus = 'success'
-  console.log('IndexedDB openned successfully!');
-}
-dbConnection.onerror = function (event) {
-  dbOpenStatus = 'failed'
-  console.error('Failed to open IndexedDB.');
-}
-dbConnection.onupgradeneeded = function(event) {
-  chatsDb = event.target.result;
-  if (!chatsDb.objectStoreNames.contains(dbName)) {
-    chatsDb.createObjectStore(dbName, { keyPath: 'id' });
-    console.log('Created object store for chat.');
-  }
-}
-
-const LeftSider = ({collapsed=false}) => {
+const LeftSider = (props) => {
+  const {collapsed=false} = props
   const [data, setData] = useState([])
-  const [chatDb, setChatDb] = useState(null)
+  const [chatsDb, setChatsDb] = useState(null)
   const [exporting, setExporting] = useState(false)
   const [refreshTimes, setRefreshTimes] = useState(0)
   const {setCurrentChat, currentChat, messageApi} = useContext(ChatUiContext)
 
   useEffect(() => {
-    const checkDb = () => {
-      if (dbOpenStatus === 'waiting') {
-        setTimeout(checkDb, 100)
-      } else if (dbOpenStatus === 'success') {
-        setChatDb(chatsDb)
-      }
-    }
-
-    checkDb()
+    new IndexedDb('chats', 1, 'chat').open().then(db => setChatsDb(db))
   }, [])
 
 
   useEffect(() => {
-    if (chatDb) {
-      const objectStore = chatDb.transaction(dbName).objectStore(dbName);
-      const request = objectStore.getAll();
-      request.onsuccess = function(event) {
+    if (chatsDb) {
+      chatsDb.getAll((event) => {
         const result = event.target.result;
         setData((result||[]).sort((a, b) => {
           return b.id - a.id;
         }))
-      };
-      request.onerror = function(event) {
+      }, (event) => {
         console.error('Failed to retrieve data from IndexedDB.');
-      }
+      })
     }
-  }, [chatDb, refreshTimes])
+  }, [chatsDb, refreshTimes])
 
   useEffect(() => {
-    if (chatDb && currentChat && !currentChat.initiatedBySide) {
+    if (chatsDb && currentChat && !currentChat.initiatedBySide) {
       console.log("Data changed, now save it")
-      let request = chatDb.transaction([dbName], "readwrite").objectStore(dbName).put(currentChat);
-      request.onsuccess = function(event) {
+      chatsDb.saveObject(currentChat, (event) => {
         console.log('Data saved successfully.');
         setRefreshTimes(t => t+1)
-      };
-      request.onerror = function(event) {
+      }, (event) => {
         console.error('Failed to save data to IndexedDB.');
-      }
+      })
     }
   }, [currentChat])
 
   const importChats = () => {
-    if (!chatDb) {
+    if (!chatsDb) {
       console.error(`IndexedDB is not ready yet, cannot import data.`);
       return
     }
@@ -107,9 +77,9 @@ const LeftSider = ({collapsed=false}) => {
         fileContent?.split('\n').map(line => {
           if (line.trim() === '') return
           const chat = JSON.parse(line.trim());
-          chatDb.transaction(dbName, "readwrite").objectStore(dbName).put(chat).onsuccess = function(event) {
+          chatsDb.saveObject(chat, (event) => {
             console.log('imported one line');
-          };
+          })
         })
         setRefreshTimes(t => t+1)
         messageApi.open({
@@ -126,54 +96,51 @@ const LeftSider = ({collapsed=false}) => {
   }
 
   const deleteHistory = (id) => {
-    if (!chatDb) {
+    if (!chatsDb) {
       console.error(`IndexedDB is not ready yet, cannot delete data with id ${id}.`);
       return
     }
 
-    const objectStore = chatDb.transaction(dbName, "readwrite").objectStore(dbName);
-    const request = objectStore.delete(id);
-    request.onsuccess = function(event) {
-      console.log('Data deleted successfully.');
+    chatsDb.deleteItemByKey(id, (event) => {
+      console.log('Data deleted successfully.')
       if (id === currentChat?.id) {
         setCurrentChat({initiatedBySide: true})
       }
       setRefreshTimes(t => t+1)
-    };
-    request.onerror = function(event) {
-      console.error('Failed to delete data from IndexedDB.');
-    }
+    }, (event) => {
+      console.error('Failed to delete data from IndexedDB.')
+    })
+
   }
 
   const exportChat = (id) => {
     setExporting(true)
-    chatDb.transaction(dbName).objectStore(dbName).get(id).onsuccess = function(event) {
+    chatsDb.getItemByKey(id, (event) => {
       const result = event.target.result;
       saveJson(result, 'chats.json')
       setExporting(false)
-    };
+    })
+
   }
 
   const exportChats = () => {
     setExporting(true)
-    chatDb.transaction(dbName).objectStore(dbName).getAll().onsuccess = function(event) {
+    chatsDb.getAll((event) => {
       const result = event.target.result;
       saveJson(result, 'chats.json.txt')
       setExporting(false)
-    };
+    })
   }
 
   const clearHistory = () => {
-    if (!chatDb) {
+    if (!chatsDb) {
       console.error(`IndexedDB is not ready yet, cannot clear data.`);
       return
     }
-    const objectStore = chatDb.transaction(dbName, "readwrite").objectStore(dbName);
-    const request = objectStore.clear();
-    request.onsuccess = function(event) {
+    chatsDb.deleteAll((event) => {
       console.log('Data cleared successfully.')
       setRefreshTimes(t => t+1)
-    }
+    })
   }
 
   return (
@@ -216,7 +183,7 @@ const LeftSider = ({collapsed=false}) => {
 
           </Divider>
         </ConfigProvider>
-        <ul>
+        <ul style={{paddingBottom: '60px', maxHeight: 'calc(100% - 50px)', overflow: 'auto'}}>
           {data?.map(item => <li className='chat-history' key={item.id}>
             <Flex>
               <div style={{width: '70%'}}>

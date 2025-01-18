@@ -1,65 +1,42 @@
 import {useEffect, useState} from 'react';
 import { Spin } from "antd";
 import md5 from "md5";
-
-const indexedDB = window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB || window.msIndexedDB
-const dbName = 'plantuml'
-let dbOpenStatus = 'waiting'
-const dbConnection = indexedDB.open(dbName,1);
-let plantumlCacheDb
-dbConnection.onsuccess = function () {
-    plantumlCacheDb = dbConnection.result;
-    dbOpenStatus = 'success'
-    console.log('IndexedDB opened successfully!');
-}
-dbConnection.onerror = function () {
-    dbOpenStatus = 'failed'
-    console.error('Failed to open IndexedDB.');
-}
-dbConnection.onupgradeneeded = function(event) {
-    plantumlCacheDb = event.target.result;
-    if (!plantumlCacheDb.objectStoreNames.contains(dbName)) {
-        plantumlCacheDb.createObjectStore(dbName, { keyPath: 'id' });
-        console.log(`Created object store for ${dbName}.`);
-    }
-}
-
+import IndexedDb from "../IndexedDb"
 
 const PlantUMLShow = ({chart}) => {
     const [loading, setLoading] = useState(false);
     const [image, setImage] = useState(null);
-    const [plantumlDb, setPlantumlDb] = useState(plantumlCacheDb)
-    useEffect(() => {
-        const checkDb = () => {
-            if (dbOpenStatus === 'waiting') {
-                setTimeout(checkDb, 100)
-            } else if (dbOpenStatus === 'success') {
-                setPlantumlDb(plantumlCacheDb)
-            }
-        }
+    const [plantumlCacheDb, setPlantumlCacheDb] = useState(null)
 
-        checkDb()
+    useEffect(()=>{
+        new IndexedDb('plantuml', 1, 'plantuml').open().then(db => setPlantumlCacheDb(db))
+
     }, [])
 
-    const savePlantUmlToCache = (key, image) => {
-        let request = plantumlDb.transaction([dbName], "readwrite").objectStore(dbName).put({id: key, value: image})
-        request.onsuccess = function() {
-            console.log(`Data cached successfully for ${key}.`);
-        };
-        request.onerror = function() {
-            console.error('Failed to save data to IndexedDB.');
+    const waitUntilDbInitialized = async () => {
+        while (!plantumlCacheDb) {
+            await new Promise(resolve => setTimeout(resolve, 100));
         }
     }
 
-    const tryToGetPlantUmlFromCache = () => {
+    const savePlantUmlToCache = (key, image) => {
+        plantumlCacheDb.saveObject({id: key, value: image}, () => {
+            console.log(`Data cached successfully for ${key}.`);
+        }, () => {
+            console.error(`Failed to cache data for ${key}.`);
+        })
+    }
+
+    const tryToGetPlantUmlFromCache = async () => {
         setLoading(true)
         let key = `${md5(chart)}-${chart.length}`
+        await waitUntilDbInitialized()
 
-        let request = plantumlDb.transaction([dbName], "readwrite").objectStore(dbName).get(key);
-        request.onsuccess = function() {
+        plantumlCacheDb.getItemByKey(key, (evt) => {
+            const result = evt.target.result;
             console.log('Data saved successfully.');
-            if (request.result) {
-                setImage(request.result.value)
+            if (result) {
+                setImage(result.value)
                 setLoading(false)
             } else {
                 fetch(`${import.meta.env.VITE_API_URL}/plantuml`, {
@@ -74,17 +51,15 @@ const PlantUMLShow = ({chart}) => {
                     savePlantUmlToCache(key, image)
                 })
             }
-        };
-        request.onerror = function() {
+        }, () => {
             console.error('Failed to get data from IndexedDB.');
-        }
-
+        })
     }
 
     useEffect(() => {
         if (!chart || chart.trim() === "") return;
 
-        tryToGetPlantUmlFromCache()
+        tryToGetPlantUmlFromCache().then()
     }, [chart]);
     return (<div>
         {loading ? <Spin size='large'></Spin> :

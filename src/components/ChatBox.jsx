@@ -1,5 +1,5 @@
 import {Button, Tooltip, Flex, Modal, Radio, Image, Spin} from "antd"
-import { useEffect, useState } from "react"
+import {useEffect, useState} from "react"
 import {
   PlusOutlined,
   ArrowUpOutlined,
