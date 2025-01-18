@@ -65,7 +65,7 @@ export let UserRoles = [
 
 export let llmOption = {
   temperature: 0.2,
-  max_tokens: 2048,
+  // max_tokens: 2048,
   top_p: 0.95,
   frequency_penalty: 0,
   presence_penalty: 0,
