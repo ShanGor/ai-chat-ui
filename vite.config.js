@@ -10,12 +10,14 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          react: ['react',
-            'react-dom','react-markdown', 'react-syntax-highlighter'],
-          antd: ['antd', 'antd/dist/reset.css'],
+          react: ['react', 'react-dom'],
+          antd: ['antd'],
+          'antd-icon': ['@ant-design/icons'],
+          markdown: ['react-markdown'],
+          'syntax-highlighter': ['react-syntax-highlighter'],
           'remark-gfm': ['remark-gfm'],
           'react-pdf': ['react-pdf'],
-          'mermaid': ['mermaid'],
+          mermaid: ['mermaid'],
         }
       }
     }
