@@ -8,7 +8,7 @@ import {
   FloatButton,
   Image,
   Input,
-  Modal,
+  Modal, Popconfirm,
   Popover,
   Select,
   Slider,
@@ -558,6 +558,16 @@ const ChatBoard = ({collapsed, auth}) => {
     }
   }
 
+  const deleteItemInChat = (idx) => {
+    if (idx < chatHistory.length) {
+      setChatHistory(old => {
+        let newHist = [...old]
+        newHist.splice(idx, 1)
+        return newHist
+      })
+    }
+  }
+
   const formatReferenceDoc = (doc) => {
     let source = doc.metaData.source.source
     let pageId = doc.metaData.source.id_in_source
@@ -630,7 +640,15 @@ const ChatBoard = ({collapsed, auth}) => {
                       }</div>
                       <div style={{width:'90%', textAlign:'left'}}>
                         <div style={{fontSize: '0.7rem', color: mainPaneParagraphColor, marginTop: '0rem', marginBottom: '0.5rem'}}>
-                          {formatDate(item.content?.created_at)}
+                          <span>{formatDate(item.content?.created_at)}</span>
+                          <span style={{marginLeft: '0.5rem'}}>
+                            <Tooltip title='Delete current row'>
+                              <Popconfirm title='Confirm to delete?' onConfirm={()=>deleteItemInChat(index)}>
+                                <Button size={'small'} type={'text'} variant="text">Delete</Button>
+                              </Popconfirm>
+                            </Tooltip>
+
+                          </span>
                         </div>
                         <div>
                           {item.images?.length > 0 && <Flex wrap="wrap" gap='small'>
