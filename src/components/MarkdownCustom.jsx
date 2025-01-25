@@ -5,7 +5,7 @@ import Markdown from "react-markdown";
 import {Prism as SyntaxHighlighter} from "react-syntax-highlighter";
 import {Tabs, Tooltip} from "antd";
 import {CopyOutlined} from "@ant-design/icons";
-import {lazy, Suspense, useContext} from "react";
+import {lazy, memo, Suspense, useContext} from "react";
 import Loading from "../Loading.jsx";
 import PlantUMLShow from "./PlantUMLShow.jsx";
 import {ChatUiContext} from "../App";
@@ -13,7 +13,7 @@ import {ChatUiContext} from "../App";
 const MermaidShow = lazy(()=> import("./MermaidShow.jsx"));
 
 
-const MarkdownCustom = ({markdownScript, index=0}) => {
+const MarkdownCustom = memo(({markdownScript, index=0}) => {
     const {messageApi} = useContext(ChatUiContext)
     const copyCode = (code) => {
         navigator.clipboard.writeText(code).then(() => {
@@ -85,5 +85,5 @@ const MarkdownCustom = ({markdownScript, index=0}) => {
                           }
                       }}
     />);
-};
+});
 export default MarkdownCustom;

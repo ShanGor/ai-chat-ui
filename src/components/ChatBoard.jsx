@@ -1,29 +1,21 @@
 import {
-  Avatar,
   Button,
   Checkbox,
   ConfigProvider,
   Divider,
   Flex,
   FloatButton,
-  Image,
-  Input,
-  Modal, Popconfirm,
-  Popover,
+  Modal,
   Select,
   Slider,
   Tooltip
 } from "antd"
 import {useContext, useEffect, useState} from "react"
-import {ChatUiContext, mainPaneParagraphColor} from "../App"
-import {EditOutlined, PieChartOutlined, PlusOutlined, RedoOutlined, SettingOutlined,} from '@ant-design/icons';
+import {ChatUiContext} from "../App"
+import {PieChartOutlined, PlusOutlined, SettingOutlined,} from '@ant-design/icons';
 import ChatBox from "./ChatBox";
-import user from '../assets/user.svg'
-import assistant from '../assets/assistant.svg'
-import NewChats from "./NewChats";
-import GeneratingResponseSection from "./GeneratingResponseSection";
-import {abbr, cancelGeneration, distinct, fetchEvents, formatDate, textNotEmpty} from "../Utility";
-import MarkdownCustom from "./MarkdownCustom.jsx";
+import {abbr, cancelGeneration, distinct, fetchEvents, textNotEmpty} from "../Utility";
+import ChatBoardCurrentHistory from "./ChatBoardCurrentHistory.jsx";
 
 let generatingTextCache = ''
 let generatingBoxHeightCache=0
@@ -74,7 +66,6 @@ export let llmOption = {
   top_k: null
 }
 
-let logId = ''
 let regenerating = false
 let regenerateParam = {message: '', images: []}
 
@@ -107,10 +98,7 @@ const ChatBoard = ({collapsed, auth}) => {
   const [models, setModels] = useState([])
   const [showUsageDialog, setShowUsageDialog] = useState(false)
 
-  // edit last question message
-  const [editQuestionModalOpen, setEditQuestionModalOpen] = useState(false)
-  const [editMessage, setEditMessage] = useState("")
-  const [editMessageIndex, setEditMessageIndex] = useState(-1)
+
 
   useEffect(() => {
     fetch(`${import.meta.env.VITE_API_URL}/api/tags`)
@@ -275,17 +263,8 @@ const ChatBoard = ({collapsed, auth}) => {
     return false
   }
 
-  const editLastQuestion = (idx) => {
-    setEditMessage(chatHistory[idx].content.message)
-    setEditQuestionModalOpen(true)
-    setEditMessageIndex(idx)
-  }
-  const handleEditLastQuestionOk = () => {
-    let newHist = [...chatHistory]
-    newHist[editMessageIndex].content.message = editMessage
-    setChatHistory(newHist)
-    setEditQuestionModalOpen(false)
-  }
+
+
 
   const submitMessage = (message, images)=> {
     if (!textNotEmpty(message)){
@@ -480,19 +459,7 @@ const ChatBoard = ({collapsed, auth}) => {
     setDoSettings(false)
   }
 
-  const isLastQuestion = (index) => {
-    let lastIndex = chatHistory.length - 1
-    if (index == lastIndex) {
-      if (chatHistory[index].role=='user') {
-        return true
-      }
-    } else if (index == lastIndex - 1) {
-      if (chatHistory[lastIndex].role=='assistant' && chatHistory[index].role=='user') {
-        return true
-      }
-    }
-    return false
-  }
+
 
   const cancelRequest = () => {
     cancelGeneration()
@@ -541,7 +508,7 @@ const ChatBoard = ({collapsed, auth}) => {
     if (data?.done) {
       console.log("done as: ", generatingTextCache)
       setChatHistory(old => {
-        let newHist = [...old, {
+        return [...old, {
           content: {
             message: generatingTextCache,
             model: data.model,
@@ -549,7 +516,6 @@ const ChatBoard = ({collapsed, auth}) => {
           },
           role: 'assistant',
         }]
-        return newHist
       })
       setGenerating(false)
       // generatingTextCache = ''
@@ -558,26 +524,9 @@ const ChatBoard = ({collapsed, auth}) => {
     }
   }
 
-  const deleteItemInChat = (idx) => {
-    if (idx < chatHistory.length) {
-      setChatHistory(old => {
-        let newHist = [...old]
-        newHist.splice(idx, 1)
-        return newHist
-      })
-    }
-  }
 
-  const formatReferenceDoc = (doc) => {
-    let source = doc.metaData.source.source
-    let pageId = doc.metaData.source.id_in_source
-    let title = doc.metaData.title || pageId
-    let url = ''
-    let content = <div style={{width: '500px', maxHeight: '500px', overflowY: 'auto'}}>{doc.text}</div>
-    return <Popover content={content} placement="rightTop">
-      {source}: <a href={url} target='_blank'>{title}</a>
-    </Popover>
-  }
+
+
 
   return (<div className="center" id='chat-board-main'>
         <div style={{top: '2.65rem', left: '16rem', position: 'fixed', width: '80%'}} ref={(el) => {
@@ -619,84 +568,14 @@ const ChatBoard = ({collapsed, auth}) => {
 
           </Divider>
         </div>
-        <div style={{
-          marginTop: '3.5rem',
-          height: contentPaneHeight,
-          width: '100%',
-          overflowY: 'scroll',
-          overflowX: 'hidden'
-        }}>
-          {chatHistory.length > 0 ? <div style={{width: '99%'}}>{
-                chatHistory.map((item, index) => {
-                  return <div key={index}>
-                    <Flex style={{width: '98%'}}>
-                      <div style={{width:'10%', minWidth: '7rem'}}>{
-                        item.role === 'assistant'?
-                            <>
-                              <Avatar src={assistant} />
-                              <div>{item.content.model}</div>
-                            </>:
-                            <Avatar src={user} />
-                      }</div>
-                      <div style={{width:'90%', textAlign:'left'}}>
-                        <div style={{fontSize: '0.7rem', color: mainPaneParagraphColor, marginTop: '0rem', marginBottom: '0.5rem'}}>
-                          <span>{formatDate(item.content?.created_at)}</span>
-                          <span style={{marginLeft: '0.5rem'}}>
-                            <Tooltip title='Delete current row'>
-                              <Popconfirm title='Confirm to delete?' onConfirm={()=>deleteItemInChat(index)}>
-                                <Button size={'small'} type={'text'} variant="text">Delete</Button>
-                              </Popconfirm>
-                            </Tooltip>
-
-                          </span>
-                        </div>
-                        <div>
-                          {item.images?.length > 0 && <Flex wrap="wrap" gap='small'>
-                            {item.images?.map((image, index) => {
-                              return <div key={index}>
-                                <Image src={image} style={{maxWidth:'6rem', maxHeight: '6rem'}}/>
-                              </div>
-                            })}
-                          </Flex>}
-                          <MarkdownCustom index={index} markdownScript={item.content?.message} />
-                          {(item.role === 'assistant' && index>=1 && chatHistory[index-1].referenceData && chatHistory[index-1].referenceData.length>0) && <div>
-                            <h4>**Reference Documents**</h4>
-                            <ul>
-                              {chatHistory[index-1].referenceData.map((refDoc, rIdx) => {
-                                return <li key={rIdx}>{formatReferenceDoc(refDoc)}</li>
-                              })}
-                            </ul>
-                          </div>}
-                        </div>
-                        {isLastQuestion(index) ? (
-                            <div style={{ position: "relative" }}>
-                              <Flex
-                                  style={{
-                                    position: "absolute",
-                                    bottom: "-1.4rem",
-                                    left: "0px",
-                                  }}
-                                  gap="small"
-                              >
-                                <Tooltip title="Edit">
-                                  <Button type="dashed" size="small" shape="circle" onClick={() => {editLastQuestion(index)}} icon={<EditOutlined />} />
-                                </Tooltip>
-                                <Tooltip title="Regenerate">
-                                  <Button type="dashed" size="small" shape="circle" onClick={() => {regenerateResult(index)}} icon={<RedoOutlined />} />
-                                </Tooltip>
-                              </Flex>
-                            </div>
-                        ) : (
-                            <></>
-                        )}
-                      </div>
-                    </Flex>
-                    <Divider></Divider>
-                  </div>
-                })}
-                {generating && <GeneratingResponseSection generatingText={generatingText} currentModel={currentModel} />}
-              </div>:
-              <NewChats setMessage={setMessage}/>}
+        <div style={{ marginTop: '3.5rem', height: contentPaneHeight, width: '100%', overflowY: 'scroll', overflowX: 'hidden'}}>
+          <ChatBoardCurrentHistory chatHistory={chatHistory}
+                                   setChatHistory={setChatHistory}
+                                   generating={generating}
+                                   generatingText={generatingText}
+                                   currentModel={currentModel}
+                                   setMessage={setMessage}
+                                   regenerateResult={regenerateResult} />
         </div>
 
         <div style={{position: 'fixed', bottom: '0', width: '100%'}} id='chat-box-parent' ref={(el) => {
@@ -756,9 +635,7 @@ const ChatBoard = ({collapsed, auth}) => {
                }}></textarea>
           </div>
         </Modal>
-        <Modal title="Edit Question" open={editQuestionModalOpen} onOk={handleEditLastQuestionOk} onCancel={() => {setEditQuestionModalOpen(false)}} okText="Save" cancelText="Cancel">
-          <Input.TextArea rows={4} value={editMessage} onChange={(e) => setEditMessage(e.target.value)} />
-        </Modal>
+
         <ConfigProvider theme={{
           token: {
             colorPrimary: 'green'
