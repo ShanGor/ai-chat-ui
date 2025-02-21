@@ -1,0 +1,31 @@
+
+.image-card {
+    position: relative
+}
+
+.image-card:hover {
+    opacity: 0.9;
+}
+
+.image-card:hover .close-image-container {
+    display: block;
+}
+
+.close-image-container {
+    display: none;
+    position: absolute;
+    top: 0.2rem;
+    right: -0.2rem;
+    z-index: 2;
+    width: 1.0rem;
+    height: 1.0rem;
+    border-radius: 50%;
+    background-color: grey;
+}
+
+.close-image-icon {
+    font-size: 0.6rem;
+    top: -0.3rem;
+    position: relative;
+    color: white;
+}
