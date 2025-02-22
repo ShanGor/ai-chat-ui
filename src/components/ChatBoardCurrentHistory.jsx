@@ -8,6 +8,7 @@ import {EditOutlined, RedoOutlined} from "@ant-design/icons";
 import GeneratingResponseSection from "./GeneratingResponseSection.jsx";
 import NewChats from "./NewChats.jsx";
 import {useState} from "react";
+import {TextDocCard} from "./TextDocCard.jsx";
 
 const ChatBoardCurrentHistory = ({chatHistory, setChatHistory, generating, generatingText, currentModel, setMessage, regenerateResult}) => {
     // edit last question message
@@ -94,12 +95,16 @@ const ChatBoardCurrentHistory = ({chatHistory, setChatHistory, generating, gener
                           </span>
                                     </div>
                                     <div>
-                                        {item.images?.length > 0 && <Flex wrap="wrap" gap='small'>
+                                        {item.images?.length + item.textDocs?.length > 0 && <Flex wrap="wrap" gap='small'>
                                             {item.images?.map((image, index) => {
                                                 return <div key={index}>
                                                     <Image src={image} style={{maxWidth: '6rem', maxHeight: '6rem'}}/>
                                                 </div>
                                             })}
+                                            {item.textDocs?.map((textDoc, index) => <TextDocCard
+                                                key={'text-card-display' + index}
+                                                textDoc={textDoc}
+                                                index={index} setTextDocs={null}></TextDocCard>)}
                                         </Flex>}
                                         <MarkdownCustom index={index} markdownScript={item.content?.message}/>
                                         {(item.role === 'assistant' && index >= 1 && chatHistory[index - 1].referenceData && chatHistory[index - 1].referenceData.length > 0) &&

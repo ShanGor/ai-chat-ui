@@ -14,7 +14,7 @@ import 'react-pdf/dist/Page/AnnotationLayer.css';
 import {uploadImage, UploadImage} from "./UploadImage.jsx";
 
 // eslint-disable-next-line react/prop-types
-const ChatBox = ({message, setMessage, images, setImages, submitMessage, width='80%', generating, cancelRequest, setSizeChanged}) => {
+const ChatBox = ({message, setMessage, images, setImages, textDocs, setTextDocs, submitMessage, width='80%', generating, cancelRequest, setSizeChanged}) => {
   const [height, setHeight] = useState(2)
   const [isFocused, setIsFocused] = useState(false)
   const [inputFieldRef, setInputFieldRef] = useState(null)
@@ -141,7 +141,7 @@ const ChatBox = ({message, setMessage, images, setImages, submitMessage, width='
   return (<div style={{marginTop: '1rem', width: width, marginLeft: `${getLeftWidth()}px`}} id='chatbox-div'>
 
     <div className="center" style={{border: '1px solid #ccc', width: '95%', borderRadius: '1rem', backgroundColor: 'white', }}>
-      <UploadImage id={'chat-image-upload'} images={images} setImages={setImages} setPdfText={text => setMessage(old => `${old}\n${text}`)}/>
+      <UploadImage id={'chat-image-upload'} images={images} setImages={setImages} textDocs={textDocs} setTextDocs={setTextDocs}/>
       <Flex align="flex-end">
         <div style={{width: '2.6rem', borderRadius: '1rem',}}>
           <Tooltip title='Upload images/PDF'>

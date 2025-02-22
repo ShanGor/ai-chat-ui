@@ -1,15 +1,4 @@
-import {
-  Button,
-  Checkbox,
-  ConfigProvider,
-  Divider,
-  Flex,
-  FloatButton,
-  Modal,
-  Select,
-  Slider,
-  Tooltip
-} from "antd"
+import {Button, Checkbox, ConfigProvider, Divider, Flex, FloatButton, Modal, Select, Slider, Tooltip} from "antd"
 import {useContext, useEffect, useState} from "react"
 import {ChatUiContext} from "../App"
 import {PieChartOutlined, PlusOutlined, SettingOutlined,} from '@ant-design/icons';
@@ -95,6 +84,7 @@ const ChatBoard = ({collapsed, auth}) => {
     prompt: ''
   })
   const [images, setImages] = useState([])
+  const [textDocs, setTextDocs] = useState([])
   const [models, setModels] = useState([])
   const [showUsageDialog, setShowUsageDialog] = useState(false)
 
@@ -292,6 +282,7 @@ const ChatBoard = ({collapsed, auth}) => {
               model: currentModel
             },
             images: images,
+            textDocs: textDocs,
             referenceData: []
           }]
         })
@@ -305,11 +296,13 @@ const ChatBoard = ({collapsed, auth}) => {
               message: message?.trim(),
               model: currentModel
             },
-            images: images
+            images: images,
+            textDocs: textDocs
           }]
         })
         setMessage('')
         setImages([])
+        setTextDocs([])
       }
     }
   }
@@ -335,6 +328,9 @@ const ChatBoard = ({collapsed, auth}) => {
         }
         if (supportImage && o.images) {
           msg.images = o.images // No need to trim it because we are using GPT4, which remains the data:image/png;base64,
+        }
+        if (o.textDocs.length > 0) {
+          msg.content = o.content.message + "\n```xml\n<docs>\n\t<doc>" + o.textDocs.map(o => o).join("\n\t<\\doc>\n") + "\n</docs>\n```"
         }
         requestMessages.push(msg)
       })
@@ -370,7 +366,7 @@ const ChatBoard = ({collapsed, auth}) => {
       method: 'POST',
       body: message?.trim()
     })
-    if (resp.status != 200 ) {
+    if (resp.status !== 200 ) {
       messageApi.open({
         type: 'error',
         content: `Failed to convert your input to be embedding: ${await resp.text()}`,
@@ -413,7 +409,7 @@ const ChatBoard = ({collapsed, auth}) => {
       return data
     } else {
       setChatHistory(hist => {
-        let newHist = [...hist, {
+        return [...hist, {
           role: 'assistant',
           content: {
             created_at: new Date().toLocaleString(),
@@ -422,7 +418,6 @@ const ChatBoard = ({collapsed, auth}) => {
           },
           images: []
         }]
-        return newHist
       })
       setMessage('')
       setImages([])
@@ -450,7 +445,7 @@ const ChatBoard = ({collapsed, auth}) => {
   const onConfirmChangePrompt = () => {
     for (let i=0; i<UserRoles.length; i++) {
       let o = UserRoles[i]
-      if (o.withRag == settingConfig.withRag && o.name === settingConfig.role) {
+      if (o.withRag === settingConfig.withRag && o.name === settingConfig.role) {
         UserRoles[i].prompt = settingConfig.prompt
         localStorage.setItem('prompts', JSON.stringify(UserRoles))
         break
@@ -588,6 +583,8 @@ const ChatBoard = ({collapsed, auth}) => {
               setMessage={setMessage}
               images={images}
               setImages={setImages}
+              textDocs={textDocs}
+              setTextDocs={setTextDocs}
               submitMessage={submitMessage}
               width={chatBoxWidth}
               generating={generating}

@@ -4,16 +4,18 @@ import {Flex, Image, Modal, Radio, Spin} from "antd";
 import {CloseOutlined} from "@ant-design/icons";
 import {useState} from "react";
 import "./UploadImage.css"
+import {TextDocCard} from "./TextDocCard.jsx";
 
 export const uploadImage = (id) => {
     document.getElementById(id).click()
 }
 
-export const UploadImage = ({id, images, setImages, setPdfText}) => {
+export const UploadImage = ({id, images, setImages, textDocs, setTextDocs}) => {
     const [showPdfOption, setShowPdfOption] = useState(false)
     const [currentPdf, setCurrentPdf] = useState(null)
     const [pdfOption, setPdfOption] = useState(2)
     const [readingPdf, setReadingPdf] = useState(false)
+    const [currentFileName, setCurrentFileName] = useState('')
 
     const removeImage = (index) => {
         setImages(images.filter((_, idx) => idx !== index))
@@ -26,6 +28,7 @@ export const UploadImage = ({id, images, setImages, setPdfText}) => {
         }
         let selected = document.getElementById(id).files[0];
         let fileName = selected.name
+        setCurrentFileName(fileName)
         console.log("selected file name: ", fileName)
         let reader = new FileReader();
         if (fileName.endsWith('.pdf')) {
@@ -50,6 +53,8 @@ export const UploadImage = ({id, images, setImages, setPdfText}) => {
         const canvas = document.getElementById('the-canvas');
         const context = canvas.getContext('2d');
         let pdf = await pdfjs.getDocument({url: currentPdf} ).promise
+
+        let text = '#' + currentFileName + '\n' + '--'
         for (let i = 1; i <= pdf.numPages; i++) {
             let page = await pdf.getPage(i)
             if (pdfOption === 1) {
@@ -64,11 +69,13 @@ export const UploadImage = ({id, images, setImages, setPdfText}) => {
                 setImages(old=>{return [...old, canvas.toDataURL()]});
             } else if (pdfOption === 2) {
                 // read pdf as text
-                let text = await getPageText(page)
-                setPdfText(text)
+                let pageText = await getPageText(page)
+                text = text + '\n' + pageText
             }
 
         }
+        if (pdfOption === 2) setTextDocs(list => [...list, text])
+
         setCurrentPdf(null)
         setShowPdfOption(false)
         setPdfOption(2)
@@ -91,22 +98,34 @@ export const UploadImage = ({id, images, setImages, setPdfText}) => {
         <input type="file" id={id}
                accept="application/pdf,image/xbm,image/jfif,image/gif,image/svg,image/jpeg,image/jpg,image/svgz,image/webp,image/png,image/bmp,image/pjp,image/apng,image/pjpeg,image/avif"
                onChange={handleImageSelected} style={{display: 'none'}}></input>
-        <div style={{width: '100%', borderRadius: '1rem', display: `${images.length > 0 ? 'block' : 'none'}`}}>
+        <div style={{
+            width: '100%',
+            borderRadius: '1rem',
+            display: `${images.length + textDocs.length > 0 ? 'block' : 'none'}`
+        }}>
             <Flex style={{marginBottom: '0.5rem', marginLeft: '0.5rem'}} gap='small' wrap="wrap">
                 {images.map((image, index) => imageCard(image, index))}
+                {textDocs.map((textDoc, index) =>
+                    <TextDocCard key={'text-card-' + index}
+                                 textDoc={textDoc} index={index} setTextDocs={setTextDocs} />)
+                }
             </Flex>
         </div>
         <Modal title="Upload PDF as images or text?"
                open={showPdfOption} onOk={readPdfAsImagesOrText}
                okButtonProps={{disabled: readingPdf}}
-               onCancel={() => {setShowPdfOption(false)}} okText="Okay" cancelText="Cancel">
+               onCancel={() => {
+                   setShowPdfOption(false)
+               }} okText="Okay" cancelText="Cancel">
             <div style={{textAlign: 'center'}}>
-                <Radio.Group onChange={(e) => {setPdfOption(e.target.value)}} value={pdfOption}>
+                <Radio.Group onChange={(e) => {
+                    setPdfOption(e.target.value)
+                }} value={pdfOption}>
                     <Radio value={1}>Images</Radio>
                     <Radio value={2}>Text</Radio>
                 </Radio.Group>
             </div>
-            <div style={{display: readingPdf?'block':'none', marginTop: '1rem'}} className='center'>
+            <div style={{display: readingPdf ? 'block' : 'none', marginTop: '1rem'}} className='center'>
                 <Spin size='large'/>
             </div>
         </Modal>
