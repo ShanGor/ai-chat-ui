@@ -330,7 +330,7 @@ const ChatBoard = ({collapsed, auth}) => {
           msg.images = o.images // No need to trim it because we are using GPT4, which remains the data:image/png;base64,
         }
         if (o.textDocs.length > 0) {
-          msg.content = o.content.message + "\n```xml\n<docs>\n\t<doc>" + o.textDocs.map(o => o).join("\n\t<\\doc>\n") + "\n</docs>\n```"
+          msg.content = o.content.message + "\n<docs><doc>\n" + o.textDocs.join("\n</doc><doc>\n") + "\n</doc>\n</docs>"
         }
         requestMessages.push(msg)
       })
