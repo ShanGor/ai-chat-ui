@@ -17,6 +17,14 @@ class IndexedDb {
         return new Promise((resolve, reject) => {
             self.dbConnection = indexedDB.open(self.dbName,1);
 
+            self.dbConnection.onupgradeneeded = function(event) {
+                self.db = event.target.result;
+                if (!self.db.objectStoreNames.contains(self.storeName)) {
+                    self.db.createObjectStore(self.storeName, { keyPath: 'id' });
+                    console.log(`Created object store for ${self.storeName}.`);
+                }
+            }
+
             self.dbConnection.onsuccess = function (event) {
                 self.db = event.target.result;
                 resolve(self);
@@ -25,14 +33,6 @@ class IndexedDb {
             self.dbConnection.onerror = function (event) {
                 console.error(`Failed to open IndexedDB for ${self.dbName}.`);
                 reject(event.target.error);
-            }
-            self.dbConnection.onupgradeneeded = function(event) {
-                self.db = event.target.result;
-                resolve(self);
-                if (!self.db.objectStoreNames.contains(self.dbName)) {
-                    self.db.createObjectStore(self.dbName, { keyPath: 'id' });
-                    console.log(`Created object store for ${self.dbName}.`);
-                }
             }
         });
     }
