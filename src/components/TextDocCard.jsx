@@ -11,6 +11,10 @@ export const TextDocCard = ({textDoc, index, setTextDocs}) => {
         const context = canvas.getContext('2d');
         // 清空画布
         context.clearRect(0, 0, canvas.width, canvas.height);
+        // set background to be white
+        context.fillStyle = 'white';
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        context.fillStyle = 'black';
         // 设置字体样式
         context.font = '20px Arial';
         // 设置最大宽度和行高
@@ -18,7 +22,7 @@ export const TextDocCard = ({textDoc, index, setTextDocs}) => {
         const lineHeight = 24; // 根据需要调整
         const maxHeight = 1000;
         // 调用wrapText函数绘制带换行的文本
-        wrapText(context, textDoc, 0, 12, maxWidth, lineHeight, maxHeight);
+        wrapText(context, textDoc, 12, 12, maxWidth, lineHeight, maxHeight);
 
         const imgDataUrl = canvas.toDataURL('image/png');
         setImgDataUrl(imgDataUrl);

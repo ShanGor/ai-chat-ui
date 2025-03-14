@@ -3,7 +3,7 @@ import {useContext, useEffect, useState} from "react"
 import {ChatUiContext} from "../App"
 import {PieChartOutlined, PlusOutlined, SettingOutlined,} from '@ant-design/icons';
 import ChatBox from "./ChatBox";
-import {abbr, cancelGeneration, distinct, fetchEvents, textNotEmpty} from "../Utility";
+import {abbr, cancelGeneration, distinct, fetchEvents, getCurrentTimeAsFormatted, textNotEmpty} from "../Utility";
 import ChatBoardCurrentHistory from "./ChatBoardCurrentHistory.jsx";
 
 let generatingTextCache = ''
@@ -35,7 +35,7 @@ export let UserRoles = [
   {
     name: "General",
     withRag: false,
-    prompt: "As an AI assistant, please answer questions in professional manner.",
+    prompt: null,
   },
   {
     name: "General",
@@ -94,8 +94,8 @@ const ChatBoard = ({collapsed, auth}) => {
     fetch(`${import.meta.env.VITE_API_URL}/api/tags`)
         .then((res) => res.json())
         .then((data) => {
+          console.log("Models loaded", data)
           setModels(data.models);
-          console.log("Models loaded", data.models)
         });
 
     if (localStorage.getItem('userRole')) {
@@ -243,18 +243,6 @@ const ChatBoard = ({collapsed, auth}) => {
     setChatHistory(hist => hist.slice(0, idx))
   };
 
-  const nowSupportImage = () => {
-    for (let i=0; i < models.length; i++) {
-      let m = models[i];
-      if (m.name === currentModel) {
-        return m.supportImage
-      }
-    }
-    return false
-  }
-
-
-
 
   const submitMessage = (message, images)=> {
     if (!textNotEmpty(message)){
@@ -314,19 +302,21 @@ const ChatBoard = ({collapsed, auth}) => {
     if (hist.length > 0) {
       let requestMessages = []
       if (!withRag) {
-        requestMessages.push({
-          role: "system",
-          content: UserRoles.filter(o => o.name === currentRole && o.withRag === false)[0].prompt
-        })
+        let prompt = UserRoles.filter(o => o.name === currentRole && o.withRag === false)[0].prompt
+        if (prompt) {
+          requestMessages.push({
+            role: "system",
+            content: prompt
+          })
+        }
       }
 
-      let supportImage = nowSupportImage()
       hist.map(o => {
         let msg = {
           role: o.role,
           content: o.content.message
         }
-        if (supportImage && o.images) {
+        if (o.images) {
           msg.images = o.images // No need to trim it because we are using GPT4, which remains the data:image/png;base64,
         }
         if (o.textDocs.length > 0) {
@@ -342,16 +332,37 @@ const ChatBoard = ({collapsed, auth}) => {
       }
     }
 
-    fetchEvents(`${import.meta.env.VITE_API_URL}/chat/ollama`, (text) => {
+    generatingTextCache = ''
+    fetchEvents(`${import.meta.env.VITE_API_URL}/ollama/chat`, (text) => {
       // console.log("got text", text)
       try {
-        let o = JSON.parse(text)
-        responseHandler(o)
+        responseHandler(text)
       } catch(e) {
         console.log("error parsing", text)
         console.log("error details: ", e)
       }
-    }, JSON.stringify(request))
+    }, JSON.stringify(apiRequestConvert(request)))
+  }
+
+  const apiRequestConvert = (data) => {
+    let request = {model: data.model, stream: data.stream, messages: []}
+    for (let i in data.messages) {
+      let msg = data.messages[i]
+      let newMsg = {role: msg.role}
+      if (msg.images?.length > 0) {
+        newMsg.content = []
+        let textContent = msg.content
+        newMsg.content.push({type: 'text', text: textContent})
+        for (let j in msg.images) {
+          let img = msg.images[j]
+          newMsg.content.push({type: 'image_url', image_url: {url: img}})
+        }
+      } else {
+        newMsg.content = msg.content
+      }
+      request.messages.push(newMsg)
+    }
+    return request
   }
 
   const findByEmbeddings = async (resp) => {
@@ -475,19 +486,53 @@ const ChatBoard = ({collapsed, auth}) => {
     setChatBoxTop(document.getElementById('chat-box-parent').getBoundingClientRect().top)
   }
 
-  const responseHandler = (data) => {
+  const responseHandler = (text) => {
+    if (!text) return
+    if ("DONE" === text) {
+      console.log("done as: ", generatingTextCache)
+      setChatHistory(old => {
+        return [...old, {
+          content: {
+            message: generatingTextCache,
+            model: currentModel,
+            created_at: getCurrentTimeAsFormatted()
+          },
+          role: 'assistant',
+        }]
+      })
+      setGenerating(false)
+      // generatingTextCache = ''
+      generatingBoxHeightCache=0
+      // setGeneratingText(generatingTextCache)
+      return;
+    }
+    let data = {}
+    try {
+      if ("string" === typeof text) {
+        data = JSON.parse(text)
+      } else if ("object" === typeof text)  {
+        data = text
+      } else {
+        console.log("error parsing", text)
+      }
+    } catch (e) {
+      console.log("error parsing", text, 'error is', e)
+    }
     // console.log("got data", data)
     setGenerating(true)
 
     if (data?.id) {
       setRequestId(data.id)
-      generatingTextCache = ''
     }
 
-    if (data?.message?.content) {
-      generatingTextCache += data.message.content
-      // console.log("now cache is: ", generatingTextCache)
-      setGeneratingText(generatingTextCache)
+    if (data?.choices?.length > 0) {
+      for (let i in data.choices) {
+        if (data.choices[i].delta?.content) {
+          generatingTextCache += data.choices[i].delta.content
+          // console.log("now cache is: ", generatingTextCache)
+          setGeneratingText(generatingTextCache)
+        }
+      }
 
       // Move the view to the end of the chat history
       setTimeout(() => {
@@ -499,28 +544,7 @@ const ChatBoard = ({collapsed, auth}) => {
         }
       }, 1000)
     }
-
-    if (data?.done) {
-      console.log("done as: ", generatingTextCache)
-      setChatHistory(old => {
-        return [...old, {
-          content: {
-            message: generatingTextCache,
-            model: data.model,
-            created_at: data.created_at
-          },
-          role: 'assistant',
-        }]
-      })
-      setGenerating(false)
-      // generatingTextCache = ''
-      generatingBoxHeightCache=0
-      // setGeneratingText(generatingTextCache)
-    }
   }
-
-
-
 
 
   return (<div className="center" id='chat-board-main'>

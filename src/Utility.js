@@ -47,6 +47,8 @@ export const fetchEvents = (url, textConsumer, data=null, headers={}, method='PO
           text.split('\n').forEach(line => {
             if (line.startsWith('event:')) {
               textConsumer(line.substring('event:'.length))
+            } else if (line.startsWith('id:')) {
+
             } else if (line.startsWith('data:')) {
               textConsumer(line.substring('data:'.length))
             } else {
@@ -104,6 +106,20 @@ export const fireEndKey = () => {
     window.dispatchEvent(eventKeyUp);
 }
 
+export const formatDatetime = (date) => { // like `new Date()`
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0'); // 月份从0开始，所以要加1
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0');
+
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+}
+
+export const getCurrentTimeAsFormatted = () => {
+      return formatDatetime(new Date())
+}
 
 export const formatDate = (dateStr) => {
   if (!dateStr) return ''
