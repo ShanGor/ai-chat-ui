@@ -10,7 +10,7 @@ import NewChats from "./NewChats.jsx";
 import {useState} from "react";
 import {TextDocCard} from "./TextDocCard.jsx";
 
-const ChatBoardCurrentHistory = ({chatHistory, setChatHistory, generating, generatingText, currentModel, setMessage, regenerateResult}) => {
+const ChatBoardCurrentHistory = ({chatHistory, setChatHistory, generating, generatingText, currentModel, setMessage, regenerateResult, currentRole}) => {
     // edit last question message
     const [editQuestionModalOpen, setEditQuestionModalOpen] = useState(false)
     const [editMessage, setEditMessage] = useState("")
@@ -149,7 +149,7 @@ const ChatBoardCurrentHistory = ({chatHistory, setChatHistory, generating, gener
                     })}
                     {generating && <GeneratingResponseSection generatingText={generatingText} currentModel={currentModel}/>}
                 </div> :
-                <NewChats setMessage={setMessage}/>}
+                <NewChats setMessage={setMessage} currentRole={currentRole}/>}
 
         <Modal title="Edit Question" open={editQuestionModalOpen} onOk={handleEditLastQuestionOk} onCancel={() => {setEditQuestionModalOpen(false)}} okText="Save" cancelText="Cancel">
             <Input.TextArea rows={4} value={editMessage} onChange={(e) => setEditMessage(e.target.value)} />

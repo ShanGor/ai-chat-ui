@@ -1,7 +1,6 @@
 import {memo} from "react";
 
 const RevealjsShow = memo(({slides}) => {
-    const id = 'slide-' + Math.random()
     if (!slides) return <></>
 
     const renderSlides = () => {
@@ -29,13 +28,14 @@ const RevealjsShow = memo(({slides}) => {
                               history: false,
                               transition: 'slide',
                             });
+                            Reveal.configure({ showNotes: true });
                         </script>
                     </body>
                 </html>`
     }
 
     return (<iframe src={`data:text/html;charset=utf-8,${encodeURIComponent(renderSlides())}`}
-                    id={id} allowFullScreen={true}
+                    allowFullScreen={true}
                     style={{width: '100%', height: '50vh', background: '#191919'}}></iframe>);
 })
 

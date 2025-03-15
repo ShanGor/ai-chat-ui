@@ -18,6 +18,7 @@ export default defineConfig({
           'remark-gfm': ['remark-gfm'],
           'react-pdf': ['react-pdf'],
           mermaid: ['mermaid'],
+          pptxgenjs: ['pptxgenjs'],
         }
       }
     }

@@ -9,7 +9,7 @@ import ChatBoardCurrentHistory from "./ChatBoardCurrentHistory.jsx";
 let generatingTextCache = ''
 let generatingBoxHeightCache=0
 
-const promptVersion = '20240730'
+const promptVersion = '20250315'
 
 export let UserRoles = [
   {
@@ -41,6 +41,16 @@ export let UserRoles = [
     name: "General",
     withRag: true,
     prompt: "Please answer questions by referencing the documents quoted and separated in <doc></doc>.\nDocuments:\n"
+  },
+  {
+    name: "Presenter",
+    withRag: false,
+    prompt: "You are a professional slides designer, you are able to design slides in different languages per the user speaks, in both RevealJs and PptxGenJs formats. With RevealJs, you only start from <section>, without html or body or div; With PptxGenJs, please start with `const pptx = new PptxGenJS();` and ends with `pptx.writeFile(`$fileName.pptx`)`",
+  },
+  {
+    name: "Presenter",
+    withRag: true,
+    prompt: "You are a professional slides designer, you are able to design slides in different languages per the user speaks, in both RevealJs and PptxGenJs formats. With RevealJs, you only start from <section>, without html or body or div; With PptxGenJs, please start with `const pptx = new PptxGenJS();` and ends with `pptx.writeFile(`$fileName.pptx`)`; Please design by referencing the documents quoted and separated in <doc></doc>.\nDocuments:\n"
   },
 ]
 
@@ -593,6 +603,7 @@ const ChatBoard = ({collapsed, auth}) => {
                                    generating={generating}
                                    generatingText={generatingText}
                                    currentModel={currentModel}
+                                   currentRole={currentRole}
                                    setMessage={setMessage}
                                    regenerateResult={regenerateResult} />
         </div>

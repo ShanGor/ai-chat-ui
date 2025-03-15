@@ -12,6 +12,7 @@ import {ChatUiContext} from "../App";
 
 const MermaidShow = lazy(()=> import("./MermaidShow.jsx"));
 const RevealjsShow = lazy(()=> import("./RevealjsShow.jsx"));
+const PptxGenJsShow = lazy(()=> import("./PptxGenJsShow.jsx"));
 
 const MarkdownCustom = memo(({markdownScript, index=0}) => {
     const {messageApi} = useContext(ChatUiContext)
@@ -51,10 +52,23 @@ const MarkdownCustom = memo(({markdownScript, index=0}) => {
                 children: source,
             },]
             return <Tabs defaultActiveKey="1" items={items}></Tabs>
+        } else if (("language-javascript" === className || className === "language-js" || className === "language-jsx") && child.includes("PptxGenJS")) {
+            let items = [{
+                key: '1',
+                label: 'Script Source',
+                children: source,
+            },{
+                key: '2',
+                label: 'PptxGenJS',
+                children: <Suspense fallback={<Loading />}>
+                    <PptxGenJsShow scriptForSlides={child} />
+                </Suspense>,
+            }, ]
+            return <Tabs defaultActiveKey="1" items={items}></Tabs>
         } else if ("language-html" === className && (child.includes("<section>") || child.includes("<nav>"))) {
             let items = [{
                 key: '1',
-                label: 'RevealJs (Click the slide and Press F for FullScreen)',
+                label: 'RevealJs (Click the slide and press F for FullScreen)',
                 children: <Suspense fallback={<Loading />}>
                     <RevealjsShow slides={child} />
                 </Suspense>,
