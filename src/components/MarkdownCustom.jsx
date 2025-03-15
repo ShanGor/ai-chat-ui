@@ -11,7 +11,7 @@ import PlantUMLShow from "./PlantUMLShow.jsx";
 import {ChatUiContext} from "../App";
 
 const MermaidShow = lazy(()=> import("./MermaidShow.jsx"));
-
+const RevealjsShow = lazy(()=> import("./RevealjsShow.jsx"));
 
 const MarkdownCustom = memo(({markdownScript, index=0}) => {
     const {messageApi} = useContext(ChatUiContext)
@@ -51,7 +51,20 @@ const MarkdownCustom = memo(({markdownScript, index=0}) => {
                 children: source,
             },]
             return <Tabs defaultActiveKey="1" items={items}></Tabs>
-        } if ("language-plantuml" === className) {
+        } else if ("language-html" === className && (child.includes("<section>") || child.includes("<nav>"))) {
+            let items = [{
+                key: '1',
+                label: 'RevealJs (Click the slide and Press F for FullScreen)',
+                children: <Suspense fallback={<Loading />}>
+                    <RevealjsShow slides={child} />
+                </Suspense>,
+            }, {
+                key: '2',
+                label: 'Source',
+                children: source,
+            },]
+            return <Tabs defaultActiveKey="1" items={items}></Tabs>
+        } else if ("language-plantuml" === className) {
             let items = [{
                 key: '1',
                 label: 'PlantUML',
