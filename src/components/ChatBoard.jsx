@@ -169,16 +169,8 @@ const ChatBoard = ({collapsed, auth}) => {
       setCurrentChat(o)
     }
 
-    if (regenerating) {
-      regenerating = false
-      generatingTextCache = ''
-      generatingBoxHeightCache=0
-      setGeneratingText(generatingTextCache)
-      console.log("trying to submit for regenerating")
-      submitMessage(regenerateParam.message, regenerateParam.images)
-    }
-
     if (aboutToTriggerLlmCall && chatHistory.length > 0) {
+      console.log("about to triggerLlmCall", chatHistory)
       aboutToTriggerLlmCall = false
       responseHandler({})
       triggerAiChatCompletion(chatHistory).then()
@@ -197,6 +189,15 @@ const ChatBoard = ({collapsed, auth}) => {
         type: 'warning',
         content: 'Converting your question to be embeddings.. Please be patient!',
       })
+    }
+
+    if (regenerating) {
+      regenerating = false
+      generatingTextCache = ''
+      generatingBoxHeightCache=0
+      setGeneratingText(generatingTextCache)
+      console.log("trying to submit for regenerating")
+      submitMessage(regenerateParam.message, regenerateParam.images)
     }
 
   }, [chatHistory])
@@ -269,39 +270,38 @@ const ChatBoard = ({collapsed, auth}) => {
         content: 'Please select a model before sending messages',
       });
     } else {
+      let hist;
       if (useRag) {
         aboutToTriggerLlmCallWithRag = true
-        setChatHistory(hist => {
-          return [...hist, {
-            role: 'user',
-            content: {
-              created_at: new Date().toLocaleString(),
-              message: message?.trim(),
-              model: currentModel
-            },
-            images: images,
-            textDocs: textDocs,
-            referenceData: []
-          }]
-        })
+        hist = [...chatHistory, {
+          role: 'user',
+          content: {
+            created_at: new Date().toLocaleString(),
+            message: message?.trim(),
+            model: currentModel
+          },
+          images: images,
+          textDocs: textDocs,
+          referenceData: []
+        }]
+
       } else {
         aboutToTriggerLlmCall = true
-        setChatHistory(hist => {
-          return [...hist, {
-            role: 'user',
-            content: {
-              created_at: new Date().toLocaleString(),
-              message: message?.trim(),
-              model: currentModel
-            },
-            images: images,
-            textDocs: textDocs
-          }]
-        })
-        setMessage('')
-        setImages([])
-        setTextDocs([])
+        hist = [...chatHistory, {
+          role: 'user',
+          content: {
+            created_at: new Date().toLocaleString(),
+            message: message?.trim(),
+            model: currentModel
+          },
+          images: images,
+          textDocs: textDocs
+        }]
       }
+      setChatHistory(hist)
+      setMessage('')
+      setImages([])
+      setTextDocs([])
     }
   }
 
@@ -329,7 +329,7 @@ const ChatBoard = ({collapsed, auth}) => {
         if (o.images) {
           msg.images = o.images // No need to trim it because we are using GPT4, which remains the data:image/png;base64,
         }
-        if (o.textDocs.length > 0) {
+        if (o.textDocs?.length > 0) {
           msg.content = o.content.message + "\n<docs><doc>\n" + o.textDocs.join("\n</doc><doc>\n") + "\n</doc>\n</docs>"
         }
         requestMessages.push(msg)

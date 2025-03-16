@@ -65,7 +65,7 @@ const MarkdownCustom = memo(({markdownScript, index=0}) => {
                 </Suspense>,
             }, ]
             return <Tabs defaultActiveKey="1" items={items}></Tabs>
-        } else if ("language-html" === className && (child.includes("<section>") || child.includes("<nav>"))) {
+        } else if (("language-html" === className || className.toLowerCase().includes("revealjs")) && (child.includes("<section>") || child.includes("<nav>"))) {
             let items = [{
                 key: '1',
                 label: 'RevealJs (Click the slide and press F for FullScreen)',
