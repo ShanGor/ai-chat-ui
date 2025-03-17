@@ -56,13 +56,11 @@ export let UserRoles = [
 
 export let llmOption = {
   temperature: 0.2,
-  // max_tokens: 2048,
+  max_completion_tokens: 4096,
   top_p: 0.95,
   frequency_penalty: 0,
   presence_penalty: 0,
-  max_new_tokens: null,
-  repeat_penalty: null,
-  top_k: null
+
 }
 
 let regenerating = false
@@ -355,7 +353,7 @@ const ChatBoard = ({collapsed, auth}) => {
   }
 
   const apiRequestConvert = (data) => {
-    let request = {model: data.model, stream: data.stream, messages: []}
+    let request = {model: data.model, stream: data.stream, messages: [], ...llmOption}
     for (let i in data.messages) {
       let msg = data.messages[i]
       let newMsg = {role: msg.role}
