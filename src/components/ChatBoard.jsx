@@ -486,7 +486,7 @@ const ChatBoard = ({collapsed, auth}) => {
       }
     }).then(()=>setTimeout(() => {
       setGenerating(false)
-      setGeneratingText('')
+      responseHandler("DONE")
     }, 100))
 
   }
