@@ -3,7 +3,7 @@ import remarkGfm from "remark-gfm";
 import dark from "react-syntax-highlighter/dist/cjs/styles/prism/one-dark.js";
 import Markdown from "react-markdown";
 import {Prism as SyntaxHighlighter} from "react-syntax-highlighter";
-import {Tabs, Tooltip} from "antd";
+import {Collapse, Tabs, Tooltip} from "antd";
 import {CopyOutlined} from "@ant-design/icons";
 import {lazy, memo, Suspense, useContext} from "react";
 import Loading from "../Loading.jsx";
@@ -94,23 +94,70 @@ const MarkdownCustom = memo(({markdownScript, index=0}) => {
         }
     }
 
-    return (<Markdown remarkPlugins={[remarkGfm]} id={`message-${index}`}
-                      children={markdownScript}
-                      components={{
-                          code(props) {
-                              const {children, className, node, ...rest} = props
-                              const match = /language-(\w+)/.exec(className || '')
-                              return match ? (
-                                  <div style={{position: 'relative'}}>
-                                      {syntaxHighlight(rest, children, match, dark, className)}
-                                  </div>
-                              ) : (
-                                  <code className={`${className} not-code`}>
-                                      {children}
-                                  </code>
-                              )
-                          }
-                      }}
-    />);
+    const formatThinkingText = (markdownScript) => {
+        if (!markdownScript) return <></>;
+
+        if (markdownScript.trim().startsWith("<think>")) {
+            if (markdownScript.includes("</think>")) {
+                const thinkingText = markdownScript.split('<think>')[1].split('</think>')[0]
+                const restScript = markdownScript.split('</think>')[1]
+                return <>
+                    <Collapse items={[{
+                        key: '1',
+                        label: 'Chain of Thinking',
+                        children: <Markdown remarkPlugins={[remarkGfm]}>{thinkingText}</Markdown>,
+                    }]} />
+                    <Markdown remarkPlugins={[remarkGfm]} id={`message-${index}`}
+                              children={restScript}
+                              components={{
+                                  code(props) {
+                                      const {children, className, node, ...rest} = props
+                                      const match = /language-(\w+)/.exec(className || '')
+                                      return match ? (
+                                          <div style={{position: 'relative'}}>
+                                              {syntaxHighlight(rest, children, match, dark, className)}
+                                          </div>
+                                      ) : (
+                                          <code className={`${className} not-code`}>
+                                              {children}
+                                          </code>
+                                      )
+                                  }
+                              }}
+                    />
+                </>
+            } else { // not yet completed!
+                const thinkingText = markdownScript.split('<think>')[1]
+                return <>
+                    <Collapse items={[{
+                        key: '1',
+                        label: 'Thinking Result',
+                        children: <Markdown remarkPlugins={[remarkGfm]}>{thinkingText}</Markdown>,
+                    }]} defaultActiveKey={['1']} />
+                </>
+            }
+        } else {
+            return <Markdown remarkPlugins={[remarkGfm]} id={`message-${index}`}
+                             children={markdownScript}
+                             components={{
+                                 code(props) {
+                                     const {children, className, node, ...rest} = props
+                                     const match = /language-(\w+)/.exec(className || '')
+                                     return match ? (
+                                         <div style={{position: 'relative'}}>
+                                             {syntaxHighlight(rest, children, match, dark, className)}
+                                         </div>
+                                     ) : (
+                                         <code className={`${className} not-code`}>
+                                             {children}
+                                         </code>
+                                     )
+                                 }
+                             }}
+            />
+        }
+    }
+
+    return formatThinkingText(markdownScript);
 });
 export default MarkdownCustom;

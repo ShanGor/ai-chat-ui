@@ -1,4 +1,4 @@
-import {Button, Tooltip, Flex, Modal, Radio, Image, Spin} from "antd"
+import {Button, Tooltip, Flex, Modal, Radio, Image, Spin, Switch, ConfigProvider} from "antd"
 import {useEffect, useState} from "react"
 import {
   PlusOutlined,
@@ -14,7 +14,11 @@ import 'react-pdf/dist/Page/AnnotationLayer.css';
 import {uploadImage, UploadImage} from "./UploadImage.jsx";
 
 // eslint-disable-next-line react/prop-types
-const ChatBox = ({message, setMessage, images, setImages, textDocs, setTextDocs, submitMessage, width='80%', generating, cancelRequest, setSizeChanged}) => {
+const ChatBox = ({message, setMessage,
+                  images, setImages,
+                  includeChatHistory, setIncludeChatHistory,
+                  textDocs, setTextDocs,
+                  submitMessage, width='80%', generating, cancelRequest, setSizeChanged}) => {
   const [height, setHeight] = useState(2)
   const [isFocused, setIsFocused] = useState(false)
   const [inputFieldRef, setInputFieldRef] = useState(null)
@@ -138,7 +142,24 @@ const ChatBox = ({message, setMessage, images, setImages, textDocs, setTextDocs,
     return Math.round((totalWidth - boxWidth) / 2) - 12
   }
 
-  return (<div style={{marginTop: '1rem', width: width, marginLeft: `${getLeftWidth()}px`}} id='chatbox-div'>
+  return (<div style={{marginTop: '0.2rem', width: width, marginLeft: `${getLeftWidth()}px`}} id='chatbox-div'>
+
+    <ConfigProvider
+        theme={{
+          components: {
+            Switch: {
+              // handleBg: '#fff'
+            },
+          },
+        }}
+    >
+      <Flex gap={'small'} style={{width: '95%', marginBottom: '0.2rem'}} className='center'>
+
+        <div><Switch checkedChildren="Chat History" autoFocus={false}
+                     checked={includeChatHistory} onChange={setIncludeChatHistory}
+                     unCheckedChildren="No history"/></div>
+      </Flex>
+    </ConfigProvider>
 
     <div className="center" style={{border: '1px solid #ccc', width: '95%', borderRadius: '1rem', backgroundColor: 'white', }}>
       <UploadImage id={'chat-image-upload'} images={images} setImages={setImages} textDocs={textDocs} setTextDocs={setTextDocs}/>

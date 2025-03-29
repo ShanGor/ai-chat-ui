@@ -95,6 +95,7 @@ const ChatBoard = ({collapsed, auth}) => {
   const [textDocs, setTextDocs] = useState([])
   const [models, setModels] = useState([])
   const [showUsageDialog, setShowUsageDialog] = useState(false)
+  const [includeChatHistory, setIncludeChatHistory] = useState(true)
 
 
 
@@ -616,6 +617,8 @@ const ChatBoard = ({collapsed, auth}) => {
               setMessage={setMessage}
               images={images}
               setImages={setImages}
+              includeChatHistory={includeChatHistory}
+              setIncludeChatHistory={setIncludeChatHistory}
               textDocs={textDocs}
               setTextDocs={setTextDocs}
               submitMessage={submitMessage}
