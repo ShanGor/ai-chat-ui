@@ -1,8 +1,16 @@
-import {Button, Tooltip, Flex, Modal, Radio, Image, Spin, Switch, ConfigProvider} from "antd"
+import {
+  Button,
+  Tooltip,
+  Flex,
+  Switch,
+  ConfigProvider,
+  FloatButton,
+  Select
+} from "antd"
 import {useEffect, useState} from "react"
 import {
   PlusOutlined,
-  ArrowUpOutlined,
+  ArrowUpOutlined, PieChartOutlined,
 } from '@ant-design/icons';
 import "./ChatBox.css"
 import Microphone from "../assets/microphone.svg"
@@ -17,11 +25,14 @@ import {uploadImage, UploadImage} from "./UploadImage.jsx";
 const ChatBox = ({message, setMessage,
                   images, setImages,
                   includeChatHistory, setIncludeChatHistory,
+                  useRag, setUseRag,
                   textDocs, setTextDocs,
                   submitMessage, width='80%', generating, cancelRequest, setSizeChanged}) => {
   const [height, setHeight] = useState(2)
   const [isFocused, setIsFocused] = useState(false)
   const [inputFieldRef, setInputFieldRef] = useState(null)
+
+  const [showUsageDialog, setShowUsageDialog] = useState(false)
 
   useEffect(()=>{
     setSizeChanged()
@@ -143,7 +154,6 @@ const ChatBox = ({message, setMessage,
   }
 
   return (<div style={{marginTop: '0.2rem', width: width, marginLeft: `${getLeftWidth()}px`}} id='chatbox-div'>
-
     <ConfigProvider
         theme={{
           components: {
@@ -154,14 +164,31 @@ const ChatBox = ({message, setMessage,
         }}
     >
       <Flex gap={'small'} style={{width: '95%', marginBottom: '0.2rem'}} className='center'>
-
-        <div><Switch checkedChildren="Chat History" autoFocus={false}
-                     checked={includeChatHistory} onChange={setIncludeChatHistory}
-                     unCheckedChildren="No history"/></div>
+        <div>
+          <Tooltip title='How many chat histories included'>
+            <Select style={{width: '7rem', height: '1.5rem'}}
+                    value={includeChatHistory}
+                    onChange={setIncludeChatHistory}
+                    options={[{ value: 0, label: <span>No history</span>},
+                      { value: 5, label: <span>Last 5</span>},
+                      { value: 10, label: <span>Last 10</span>},
+                      { value: 30, label: <span>Last 30</span>},
+                      { value: 60, label: <span>Last 60</span>}
+                    ]}/>
+          </Tooltip>
+        </div>
+        <div>
+          <Tooltip title={'Include Knowledge with RAG'}>
+            <Switch checkedChildren="Knowledge" autoFocus={false}
+                    checked={useRag} onChange={setUseRag}
+                    unCheckedChildren="No Knowlege"/>
+          </Tooltip>
+        </div>
       </Flex>
     </ConfigProvider>
 
-    <div className="center" style={{border: '1px solid #ccc', width: '95%', borderRadius: '1rem', backgroundColor: 'white', }}>
+    <div className="center"
+         style={{border: '1px solid #ccc', width: '95%', borderRadius: '1rem', backgroundColor: 'white',}}>
       <UploadImage id={'chat-image-upload'} images={images} setImages={setImages} textDocs={textDocs} setTextDocs={setTextDocs}/>
       <Flex align="flex-end">
         <div style={{width: '2.6rem', borderRadius: '1rem',}}>
@@ -198,6 +225,21 @@ const ChatBox = ({message, setMessage,
     </div>
     <div style={{opacity: '0.7', marginTop: '0.2rem'}}>LLMs can make mistakes. Verify important information.</div>
 
+    <ConfigProvider theme={{
+      token: {
+        colorPrimary: 'green'
+      }
+    }}>
+      <FloatButton.Group
+          trigger='hover'
+          style={{marginBottom: '1rem'}}>
+        <FloatButton type='default'
+                     tooltip='Summary of usage'
+                     onClick={() => setShowUsageDialog(true)}
+                     icon={<PieChartOutlined />}/>
+      </FloatButton.Group>
+
+    </ConfigProvider>
   </div>)
 }
 

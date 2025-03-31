@@ -8,7 +8,7 @@ const { Meta } = Card;
 
 const QuickTask = ({title, description, onClick=null}) => {
     return (
-    <Card bordered={false} onClick={()=> onClick && onClick(`${title} ${description}`)} className="quick-task">
+    <Card variant="borderless" onClick={()=> onClick && onClick(`${title} ${description}`)} className="quick-task">
     <Flex>
       <Meta title={title} style={{textAlign: 'left', width: '90%'}}
             description={description} />

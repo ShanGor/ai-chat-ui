@@ -1,67 +1,12 @@
-import {Button, Checkbox, ConfigProvider, Divider, Flex, FloatButton, Modal, Select, Slider, Tooltip} from "antd"
 import {useContext, useEffect, useState} from "react"
-import {ChatUiContext} from "../App"
-import {PieChartOutlined, PlusOutlined, SettingOutlined,} from '@ant-design/icons';
+import {ChatUiContext, llmOption, UserRoles} from "../App"
 import ChatBox from "./ChatBox";
-import {abbr, cancelGeneration, distinct, fetchEvents, getCurrentTimeAsFormatted, textNotEmpty} from "../Utility";
+import {abbr, cancelGeneration, fetchEvents, getCurrentTimeAsFormatted, textNotEmpty} from "../Utility";
 import ChatBoardCurrentHistory from "./ChatBoardCurrentHistory.jsx";
 
 let generatingTextCache = ''
 let generatingBoxHeightCache=0
 
-const promptVersion = '20250315'
-
-export let UserRoles = [
-  {
-    name: "Developer",
-    withRag: false,
-    prompt: "You are a Professional Developer Assistant that will help software developers to accomplish tasks regarding coding, testing, architecture design, database design, data processing. You should answer questions using professional terms and give code examples (with Markdown code section including language info in lowercase) whenever possible. \n \nIf you are not sure about the answer, you should answer:\"Sorry, I can only answer questions about Software Development.\""
-  },
-  {
-    name: "BA",
-    withRag: false,
-    prompt: "As an AI assistant, you are required to act as a world-class product owner for a banking industry and help create elaborative user stories based on high-level business requirements. I want you to write comprehensive user stories which are distinct from each other. The user stories should be granular. DO NOT include any technical requirements. However, I would like you to create applicable non-functional requirements. DO NOT repeat the user stories. I also want you to provide acceptance criteria for every user story. Acceptance criteria could include specific features that need to be implemented, or specific performance metrics that need to be met. Your first ask is to create user stories based on the following high-level business requirement."
-  },
-  {
-    name: "Developer",
-    withRag: true,
-    prompt: "You are a Professional Developer Assistant that will help software developers to accomplish tasks regarding coding, testing, architecture design, database design, data processing. You should answer questions using professional terms and give code examples (with Markdown code section including language info in lowercase) whenever possible by referencing below Documents quoted and separated in <doc></doc>. If you are not sure about the answer, you should answer:\"Sorry, I can only answer questions about Software Development.\".\n\nDocuments:\n"
-  },
-  {
-    name: "BA",
-    withRag: true,
-    prompt: "As an AI assistant, you are required to act as a world-class product owner for a banking industry and help create elaborative user stories based on high-level business requirements. I want you to write comprehensive user stories which are distinct from each other. The user stories should be granular. DO NOT include any technical requirements. However, I would like you to create applicable non-functional requirements. DO NOT repeat the user stories. I also want you to provide acceptance criteria for every user story. Acceptance criteria could include specific features that need to be implemented, or specific performance metrics that need to be met. Your first ask is to create user stories based on the user input as high-level business requirement, and reference below documents quoted and separated in <doc></doc> as your knowledge base.\n\nDocuments:\n"
-  },
-  {
-    name: "General",
-    withRag: false,
-    prompt: null,
-  },
-  {
-    name: "General",
-    withRag: true,
-    prompt: "Please answer questions by referencing the documents quoted and separated in <doc></doc>.\nDocuments:\n"
-  },
-  {
-    name: "Presenter",
-    withRag: false,
-    prompt: "You are a professional slides designer, you are able to design slides in different languages per the user speaks, in both RevealJs and PptxGenJs formats. With RevealJs, you only start from <section>, without html or body or div; With PptxGenJs, please code with javascript and start with `const pptx = new PptxGenJS();` and ends with `pptx.writeFile(`$fileName.pptx`)`",
-  },
-  {
-    name: "Presenter",
-    withRag: true,
-    prompt: "You are a professional slides designer, you are able to design slides in different languages per the user speaks, in both RevealJs and PptxGenJs formats. With RevealJs, you only start from <section>, without html or body or div; With PptxGenJs, please code with javascript and start with `const pptx = new PptxGenJS();` and ends with `pptx.writeFile(`$fileName.pptx`)`; Please design by referencing the documents quoted and separated in <doc></doc>.\nDocuments:\n"
-  },
-]
-
-export let llmOption = {
-  temperature: 0.2,
-  max_completion_tokens: 4096,
-  top_p: 0.95,
-  frequency_penalty: 0,
-  presence_penalty: 0,
-
-}
 
 let regenerating = false
 let regenerateParam = {message: '', images: []}
@@ -70,9 +15,7 @@ let aboutToTriggerLlmCall = false
 let aboutToTriggerLlmCallWithRag = false
 
 // eslint-disable-next-line react/prop-types
-const ChatBoard = ({collapsed, auth}) => {
-  const [currentModel, setCurrentModel] = useState('qwen2.5:0.5b')
-  const [currentRole, setCurrentRole] = useState('Developer')
+const ChatBoard = ({collapsed, currentModel, currentRole}) => {
   const [message, setMessage] = useState('')
   const [generating, setGenerating] = useState(false)
   const [generatingText, setGeneratingText] = useState('')
@@ -84,70 +27,18 @@ const ChatBoard = ({collapsed, auth}) => {
   const [requestId, setRequestId] = useState('')
   const [chatBoxWidth, setChatBoxWidth] = useState('90%')
   const [useRag, setUseRag] = useState(false)
-  const [doSettings, setDoSettings] = useState(false)
-  const [temperature, setTemperature] = useState(0)
-  const [settingConfig, setSettingConfig] = useState({
-    role: null,
-    withRag: false,
-    prompt: ''
-  })
+
+
   const [images, setImages] = useState([])
   const [textDocs, setTextDocs] = useState([])
-  const [models, setModels] = useState([])
-  const [showUsageDialog, setShowUsageDialog] = useState(false)
-  const [includeChatHistory, setIncludeChatHistory] = useState(true)
+  const [includeChatHistory, setIncludeChatHistory] = useState(5)
 
 
 
   useEffect(() => {
-    fetch(`${import.meta.env.VITE_API_URL}/api/tags`)
-        .then((res) => res.json())
-        .then((data) => {
-          console.log("Models loaded", data)
-          setModels(data.models);
-        });
-
-    if (localStorage.getItem('userRole')) {
-      setCurrentRole(localStorage.getItem('userRole'))
-    }
-    // store / retrieve prompts
-    if (localStorage.getItem('prompts')) {
-      if (localStorage.getItem('prompt-version') && localStorage.getItem('prompt-version') >= promptVersion){
-        UserRoles = JSON.parse(localStorage.getItem('prompts'))
-      } else {
-        localStorage.setItem('prompts', JSON.stringify(UserRoles))
-        localStorage.setItem('prompt-version', promptVersion)
-      }
-    } else {
-      localStorage.setItem('prompts', JSON.stringify(UserRoles))
-    }
-
-    // store / retrieve options
-    if (localStorage.getItem('options')) {
-      llmOption = JSON.parse(localStorage.getItem('options'))
-      setTemperature(llmOption.temperature)
-    } else {
-      setTemperature(llmOption.temperature)
-      localStorage.setItem('options', JSON.stringify(llmOption))
-    }
-
     window.addEventListener("resize", onPaneSizeChanged)
   }, [])
 
-  useEffect(() => {
-    if (models && models.length > 0) {
-      // store / retrieve model
-      if (localStorage.getItem('model')) {
-        let oldModel = localStorage.getItem('model')
-        for(let i in models) {
-          if (models[i].name === oldModel) {
-            setCurrentModel(oldModel)
-            break
-          }
-        }
-      }
-    }
-  }, [models]);
 
   useEffect(() => {
     if (currentChat && currentChat.initiatedBySide) {
@@ -184,10 +75,6 @@ const ChatBoard = ({collapsed, auth}) => {
       triggerAiChatCompletionWithRag(chatHistory, last.content.message, last.images).then(data => data.map(o => refData.push(o)))
       setMessage('')
       setImages([])
-      messageApi.open({
-        type: 'warning',
-        content: 'Converting your question to be embeddings.. Please be patient!',
-      })
     }
 
     if (regenerating) {
@@ -212,7 +99,7 @@ const ChatBoard = ({collapsed, auth}) => {
 
   useEffect(() => {
     if (chatBoxTop > 0 && selectModeBottom > 0) {
-      setContentPaneHeight(`${chatBoxTop - selectModeBottom + 20}px`)
+      setContentPaneHeight(`${chatBoxTop - selectModeBottom}px`)
     }
   }, [chatBoxTop, selectModeBottom])
 
@@ -228,16 +115,6 @@ const ChatBoard = ({collapsed, auth}) => {
       setChatBoxWidth(targetWidth)
       // console.log("target width is", targetWidth)
     }
-  }
-
-  const modelChange = (value) => {
-    localStorage.setItem('model', value)
-    setCurrentModel(value)
-  }
-
-  const userRoleChange = (value) => {
-    localStorage.setItem('userRole', value)
-    setCurrentRole(value)
   }
 
   const regenerateResult = (idx) => {
@@ -375,30 +252,28 @@ const ChatBoard = ({collapsed, auth}) => {
   }
 
   const findByEmbeddings = async (resp) => {
-    return fetch(`${import.meta.env.VITE_API_URL}/find-by-embedding/5`, {
+    let payload;
+    if (typeof resp === 'string') {
+      payload = resp
+    } else {
+      payload = await resp.text()
+    }
+    return fetch(`${import.meta.env.VITE_API_URL}/api/find-embeddings/5`, {
       method: 'POST',
-      body: await resp.text()
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: payload
     })
   }
   const triggerAiChatCompletionWithRag = async (hist, message, images) => {
     console.log("====** calling triggerAiChatCompletionWithRag")
-    let resp = await fetch(`${import.meta.env.VITE_API_URL}/api/embedding`, {
-      method: 'POST',
-      body: message?.trim()
-    })
-    if (resp.status !== 200 ) {
-      messageApi.open({
-        type: 'error',
-        content: `Failed to convert your input to be embedding: ${await resp.text()}`,
-      });
-      return null
-    }
 
     messageApi.open({
       type: 'warning',
       content: 'Searching relevant docs by embedding..',
     })
-    resp = await findByEmbeddings(resp)
+    let resp = await findByEmbeddings(message?.trim())
     let data = await resp.json()
     console.log("Embedding Data:", data)
 
@@ -411,7 +286,7 @@ const ChatBoard = ({collapsed, auth}) => {
       let rag_prompt = UserRoles.filter(o => o.name === currentRole && o.withRag === true)[0].prompt
       for (let i=0; i<data.length; i++){
         let e = data[i]
-        rag_prompt += `<doc>${e.text}</doc>\n`
+        rag_prompt += `<doc>${e.text?.trim()}</doc>\n`
       }
       console.log("rag_prompt", rag_prompt)
       let messages = [{
@@ -444,37 +319,6 @@ const ChatBoard = ({collapsed, auth}) => {
       return null
     }
   }
-
-  const onSettingChoiceChange = (obj) => {
-    let old = {...settingConfig}
-    if (obj.role) {
-      old.role = obj.role
-    } else {
-      old.withRag = obj.withRag
-    }
-    old.prompt = UserRoles.filter(o => o.name === old.role && o.withRag == old.withRag)[0].prompt
-    setSettingConfig(old)
-  }
-
-  const onSettingPromptChanged = (promptStr) => {
-    let old = {...settingConfig}
-    old.prompt = promptStr
-    setSettingConfig(old)
-  }
-
-  const onConfirmChangePrompt = () => {
-    for (let i=0; i<UserRoles.length; i++) {
-      let o = UserRoles[i]
-      if (o.withRag === settingConfig.withRag && o.name === settingConfig.role) {
-        UserRoles[i].prompt = settingConfig.prompt
-        localStorage.setItem('prompts', JSON.stringify(UserRoles))
-        break
-      }
-    }
-    setDoSettings(false)
-  }
-
-
 
   const cancelRequest = () => {
     cancelGeneration()
@@ -557,46 +401,13 @@ const ChatBoard = ({collapsed, auth}) => {
 
 
   return (<div className="center" id='chat-board-main'>
-        <div style={{top: '2.65rem', left: '16rem', position: 'fixed', width: '80%'}} ref={(el) => {
+        <div style={{marginTop: '0.8rem', left: '16rem', width: '80%'}} ref={(el) => {
           if (el) {
             setSelectModeBottom(el.getBoundingClientRect().bottom);
           }
         }}>
-          <Divider orientation='center'>
-                <span style={{marginRight: '0.5rem'}}>
-                  <Tooltip title='Create a new chat'>
-                    <Button size="middle" style={{color: 'white', backgroundColor: 'green'}}
-                            onClick={() => {
-                              setCurrentChat({initiatedBySide: true})
-                            }}
-                            icon={<PlusOutlined/>}/>
-                  </Tooltip>
-                </span>
-            <span style={{marginRight: '0.5rem', fontSize: '1.3rem'}}>Select a model:</span>
-            <Select style={{width: '150px'}}
-                    value={currentModel} onSelect={modelChange}
-                    placeholder="from the list"
-                    options={models.map(model => {
-                      return {value: model.name, label: model.display}
-                    })}/>
-            <span style={{marginLeft: '0.5rem', marginRight: '0.5rem', fontSize: '1.3rem'}}>Your role:</span>
-            <Select style={{width: '150px'}}
-                    value={currentRole} onSelect={userRoleChange}
-                    placeholder="from the list"
-                    options={UserRoles.map(role => role.name).filter(distinct).map(name => {
-                      return {value: name, label: name}
-                    })}/>
-            <span style={{marginLeft: '0.5rem', marginRight: '0.5rem', fontSize: '1rem'}}>Include Knowledge:</span>
-            <Checkbox checked={useRag} onChange={(e) => {
-              setUseRag(e.target.checked)}}/>
-
-            <Tooltip style={{marginLeft:'0.2rem'}} title='Settings' placement='bottom'>
-              <Button shape='circle' type="text" icon={<SettingOutlined />} size="large" onClick={() => {setDoSettings(true)}} />
-            </Tooltip>
-
-          </Divider>
         </div>
-        <div style={{ marginTop: '3.5rem', height: contentPaneHeight, width: '100%', overflowY: 'scroll', overflowX: 'hidden'}}>
+        <div style={{height: contentPaneHeight, width: '100%', overflowY: 'scroll', overflowX: 'hidden'}}>
           <ChatBoardCurrentHistory chatHistory={chatHistory}
                                    setChatHistory={setChatHistory}
                                    generating={generating}
@@ -613,14 +424,11 @@ const ChatBoard = ({collapsed, auth}) => {
           }
         }}>
           <ChatBox
-              message={message}
-              setMessage={setMessage}
-              images={images}
-              setImages={setImages}
-              includeChatHistory={includeChatHistory}
-              setIncludeChatHistory={setIncludeChatHistory}
-              textDocs={textDocs}
-              setTextDocs={setTextDocs}
+              message={message} setMessage={setMessage}
+              images={images} setImages={setImages}
+              includeChatHistory={includeChatHistory} setIncludeChatHistory={setIncludeChatHistory}
+              useRag={useRag} setUseRag={setUseRag}
+              textDocs={textDocs} setTextDocs={setTextDocs}
               submitMessage={submitMessage}
               width={chatBoxWidth}
               generating={generating}
@@ -628,62 +436,6 @@ const ChatBoard = ({collapsed, auth}) => {
               setChatHistory={setChatHistory}
               setSizeChanged={setSizeChanged}/>
         </div>
-        <Modal title="Config Your Local settings" open={doSettings} onOk={() => {onConfirmChangePrompt()}} onCancel={() => {setDoSettings(false)}}>
-          <h4>Options</h4>
-          <Flex gap='small'>
-            <div>Temperature: <span style={{fontStyle: "italic"}}>Accurate</span></div>
-            <div style={{marginTop: '-0.2rem'}}>
-              <Slider style={{width: '150px'}} value={temperature} step={0.1} min={0.1} max={0.9}
-                      onChange={v => {
-                        setTemperature(v)
-                        llmOption.temperature = v
-                      }}/>
-            </div>
-            <div><span style={{fontStyle: "italic"}}>Creative</span></div>
-          </Flex>
-          <h4>Prompts</h4>
-          <Flex gap='small'>
-            <div><Select style={{width: '120px'}}
-                         placeholder='Choose role'
-                         onSelect={(v) => {
-                           onSettingChoiceChange({role: v})
-                         }}
-                         value={settingConfig.role}>
-              {UserRoles.map(o => o.name).filter(distinct).map((name) =>
-                  <Select.Option key={name}>{name}</Select.Option>
-              )}
-            </Select></div>
-            <div style={{marginTop: '0.3rem'}}>
-              <span style={{marginRight: '0.5rem'}}>With RAG:</span>
-              <Checkbox checked={settingConfig.withRag}
-                        onChange={(e) => {
-                          onSettingChoiceChange({withRag: e.target.checked})
-                        }
-                        }/>
-            </div>
-          </Flex>
-          <div style={{marginTop: '0.5rem'}}>
-               <textarea cols={74} rows={10} value={settingConfig.prompt} onChange={(e) => {
-                 onSettingPromptChanged(e.target.value)
-               }}></textarea>
-          </div>
-        </Modal>
-
-        <ConfigProvider theme={{
-          token: {
-            colorPrimary: 'green'
-          }
-        }}>
-          <FloatButton.Group
-              trigger='hover'
-              style={{marginBottom: '10%'}}>
-            <FloatButton type='default'
-                         tooltip='Summary of usage'
-                         onClick={() => setShowUsageDialog(true)}
-                         icon={<PieChartOutlined />}/>
-          </FloatButton.Group>
-
-        </ConfigProvider>
 
       </div>
   )

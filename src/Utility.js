@@ -160,3 +160,7 @@ export const saveJson = (obj, filename) => {
       link.remove()
       urlObject.revokeObjectURL(url)
 }
+
+export const base64 = (arrayBuff) => {
+      return btoa(String.fromCharCode(...new Uint8Array(arrayBuff)))
+}
