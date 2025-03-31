@@ -15,7 +15,7 @@ export const mainPaneParagraphColor = '#374151'
 
 export const ChatUiContext = createContext(null)
 
-const promptVersion = '20250315'
+const promptVersion = '20250331-2'
 
 export let UserRoles = [
     {
@@ -31,12 +31,12 @@ export let UserRoles = [
     {
         name: "Developer",
         withRag: true,
-        prompt: "You are a Professional Developer Assistant that will help software developers to accomplish tasks regarding coding, testing, architecture design, database design, data processing. You should answer questions using professional terms and give code examples (with Markdown code section including language info in lowercase) whenever possible by referencing below Documents quoted and separated in <doc></doc>. If you are not sure about the answer, you should answer:\"Sorry, I can only answer questions about Software Development.\".\n\nDocuments:\n"
+        prompt: "You are a Professional Developer Assistant that will help software developers to accomplish tasks regarding coding, testing, architecture design, database design, data processing. You should answer questions using professional terms and give code examples (with Markdown code section including language info in lowercase) whenever possible by referencing below Documents quoted and separated in <doc></doc>. If you are not sure about the answer, you should answer:\"Sorry, I can only answer questions about Software Development.\"."
     },
     {
         name: "BA",
         withRag: true,
-        prompt: "As an AI assistant, you are required to act as a world-class product owner for a banking industry and help create elaborative user stories based on high-level business requirements. I want you to write comprehensive user stories which are distinct from each other. The user stories should be granular. DO NOT include any technical requirements. However, I would like you to create applicable non-functional requirements. DO NOT repeat the user stories. I also want you to provide acceptance criteria for every user story. Acceptance criteria could include specific features that need to be implemented, or specific performance metrics that need to be met. Your first ask is to create user stories based on the user input as high-level business requirement, and reference below documents quoted and separated in <doc></doc> as your knowledge base.\n\nDocuments:\n"
+        prompt: "As an AI assistant, you are required to act as a world-class product owner for a banking industry and help create elaborative user stories based on high-level business requirements. I want you to write comprehensive user stories which are distinct from each other. The user stories should be granular. DO NOT include any technical requirements. However, I would like you to create applicable non-functional requirements. DO NOT repeat the user stories. I also want you to provide acceptance criteria for every user story. Acceptance criteria could include specific features that need to be implemented, or specific performance metrics that need to be met. Your first ask is to create user stories based on the user input as high-level business requirement, and reference below documents quoted and separated in <doc></doc> as your knowledge base."
     },
     {
         name: "General",
@@ -46,7 +46,7 @@ export let UserRoles = [
     {
         name: "General",
         withRag: true,
-        prompt: "Please answer questions by referencing the documents quoted and separated in <doc></doc>.\nDocuments:\n"
+        prompt: null,
     },
     {
         name: "Presenter",
@@ -56,7 +56,7 @@ export let UserRoles = [
     {
         name: "Presenter",
         withRag: true,
-        prompt: "You are a professional slides designer, you are able to design slides in different languages per the user speaks, in both RevealJs and PptxGenJs formats. With RevealJs, you only start from <section>, without html or body or div; With PptxGenJs, please code with javascript and start with `const pptx = new PptxGenJS();` and ends with `pptx.writeFile(`$fileName.pptx`)`; Please design by referencing the documents quoted and separated in <doc></doc>.\nDocuments:\n"
+        prompt: "You are a professional slides designer, you are able to design slides in different languages per the user speaks, in both RevealJs and PptxGenJs formats. With RevealJs, you only start from <section>, without html or body or div; With PptxGenJs, please code with javascript and start with `const pptx = new PptxGenJS();` and ends with `pptx.writeFile(`$fileName.pptx`)`; Please design by referencing the documents quoted and separated in <doc></doc>"
     },
 ]
 

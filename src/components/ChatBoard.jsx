@@ -69,10 +69,10 @@ const ChatBoard = ({collapsed, currentModel, currentRole}) => {
     if (aboutToTriggerLlmCallWithRag && chatHistory.length > 0) {
       aboutToTriggerLlmCallWithRag = false
       responseHandler({})
-      let last = chatHistory[chatHistory.length-1]
-      let refData = last.referenceData
-      console.log("before calling triggerAiChatCompletionWithRag", last)
-      triggerAiChatCompletionWithRag(chatHistory, last.content.message, last.images).then(data => data.map(o => refData.push(o)))
+      // let last = chatHistory[chatHistory.length-1]
+      // let refData = last.referenceData
+      // console.log("before calling triggerAiChatCompletionWithRag", last)
+      triggerAiChatCompletionWithRag(chatHistory).then()//.then(data => data.map(o => refData.push(o)))
       setMessage('')
       setImages([])
     }
@@ -206,7 +206,12 @@ const ChatBoard = ({collapsed, currentModel, currentRole}) => {
           msg.images = o.images // No need to trim it because we are using GPT4, which remains the data:image/png;base64,
         }
         if (o.textDocs?.length > 0) {
-          msg.content = o.content.message + "\n<docs><doc>\n" + o.textDocs.join("\n</doc><doc>\n") + "\n</doc>\n</docs>"
+          msg.content += '\n\n# Attached Documents:\n'
+          msg.content += "\n<docs><doc>\n" + o.textDocs.join("\n</doc><doc>\n") + "\n</doc>\n</docs>"
+        }
+        if (o.referenceData?.length > 0) {
+          msg.content += '\n\n# Below are the context documents quoted in <context></context> and separated by <doc></doc> for your reference to help to answer the question above, sorted by relevance ranking descending, some of the doc might be irrelevant, please ignore if irrelevant:\n'
+          msg.content += "\n<context>\n<doc>\n" + o.referenceData.map(o => o.text.trim()).join("\n</doc>\n<doc>\n") + "\n</doc>\n</context>"
         }
         requestMessages.push(msg)
       })
@@ -266,14 +271,25 @@ const ChatBoard = ({collapsed, currentModel, currentRole}) => {
       body: payload
     })
   }
-  const triggerAiChatCompletionWithRag = async (hist, message, images) => {
+  const triggerAiChatCompletionWithRag = async (hist) => {
     console.log("====** calling triggerAiChatCompletionWithRag")
+    let last = hist[chatHistory.length-1]
+    let message = last.content?.message
+    // let refData = last.referenceData
 
     messageApi.open({
       type: 'warning',
       content: 'Searching relevant docs by embedding..',
     })
     let resp = await findByEmbeddings(message?.trim())
+    if (!resp.ok) {
+      messageApi.open({
+        type: 'error',
+        content: `Failed to find relevant docs: ${await resp.text()}`,
+      });
+      return null
+    }
+
     let data = await resp.json()
     console.log("Embedding Data:", data)
 
@@ -284,20 +300,27 @@ const ChatBoard = ({collapsed, currentModel, currentRole}) => {
     // console.log("embeddings", data)
     if (data) {
       let rag_prompt = UserRoles.filter(o => o.name === currentRole && o.withRag === true)[0].prompt
-      for (let i=0; i<data.length; i++){
-        let e = data[i]
-        rag_prompt += `<doc>${e.text?.trim()}</doc>\n`
-      }
+      // rag_prompt += '<docs>\n'
+      // for (let i=0; i<data.length; i++){
+      //   let e = data[i]
+      //   rag_prompt += `<doc>${e.text?.trim()}</doc>\n`
+      // }
+      // rag_prompt += '</docs>'
       console.log("rag_prompt", rag_prompt)
-      let messages = [{
-        role: 'system',
-        content: {
-          created_at: new Date().toLocaleString(),
-          message: rag_prompt.trim(),
-          model: currentModel
-        },
-        images: images
-      }, ...hist]
+      last.referenceData = data
+      let messages
+      if (rag_prompt) {
+        messages = [{
+          role: 'system',
+          content: {
+            created_at: new Date().toLocaleString(),
+            message: rag_prompt.trim(),
+            model: currentModel
+          }
+        }, ...hist]
+      } else {
+        messages = [...hist]
+      }
       responseHandler({})
       triggerAiChatCompletion(messages, true).then()
       setUseRag(false)
