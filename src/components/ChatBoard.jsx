@@ -1,5 +1,5 @@
 import {useContext, useEffect, useState} from "react"
-import {ChatUiContext, llmOption, UserRoles} from "../App"
+import {ChatUiContext, UserRoles} from "../App"
 import ChatBox from "./ChatBox";
 import {abbr, cancelGeneration, fetchEvents, getCurrentTimeAsFormatted, textNotEmpty} from "../Utility";
 import ChatBoardCurrentHistory from "./ChatBoardCurrentHistory.jsx";
@@ -19,7 +19,7 @@ const ChatBoard = ({collapsed, currentModel, currentRole}) => {
   const [message, setMessage] = useState('')
   const [generating, setGenerating] = useState(false)
   const [generatingText, setGeneratingText] = useState('')
-  const {currentChat, setCurrentChat, messageApi} = useContext(ChatUiContext)
+  const {currentChat, setCurrentChat, messageApi, llmOption} = useContext(ChatUiContext)
   const [chatHistory, setChatHistory] = useState([])
   const [chatBoxTop, setChatBoxTop] = useState(0)
   const [selectModeBottom, setSelectModeBottom] = useState(0)
@@ -27,7 +27,7 @@ const ChatBoard = ({collapsed, currentModel, currentRole}) => {
   const [requestId, setRequestId] = useState('')
   const [chatBoxWidth, setChatBoxWidth] = useState('90%')
   const [useRag, setUseRag] = useState(false)
-
+  const [ragTopK, setRagTopK] = useState(3)
 
   const [images, setImages] = useState([])
   const [textDocs, setTextDocs] = useState([])
@@ -253,7 +253,14 @@ const ChatBoard = ({collapsed, currentModel, currentRole}) => {
       }
       request.messages.push(newMsg)
     }
-    return request
+    return {
+      request: request,
+      options: {
+        useRag: useRag,
+        ragTopK: ragTopK,
+        includeHistoryCount: includeChatHistory,
+      }
+    }
   }
 
   const findByEmbeddings = async (resp) => {
@@ -263,7 +270,7 @@ const ChatBoard = ({collapsed, currentModel, currentRole}) => {
     } else {
       payload = await resp.text()
     }
-    return fetch(`${import.meta.env.VITE_API_URL}/api/find-embeddings/5`, {
+    return fetch(`${import.meta.env.VITE_API_URL}/api/find-embeddings/${ragTopK}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -450,7 +457,7 @@ const ChatBoard = ({collapsed, currentModel, currentRole}) => {
               message={message} setMessage={setMessage}
               images={images} setImages={setImages}
               includeChatHistory={includeChatHistory} setIncludeChatHistory={setIncludeChatHistory}
-              useRag={useRag} setUseRag={setUseRag}
+              useRag={useRag} setUseRag={setUseRag} ragTopK={ragTopK} setRagTopK={setRagTopK}
               textDocs={textDocs} setTextDocs={setTextDocs}
               submitMessage={submitMessage}
               width={chatBoxWidth}

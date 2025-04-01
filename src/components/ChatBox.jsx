@@ -5,7 +5,7 @@ import {
   Switch,
   ConfigProvider,
   FloatButton,
-  Select
+  Select, Input
 } from "antd"
 import {useEffect, useState} from "react"
 import {
@@ -25,7 +25,7 @@ import {uploadImage, UploadImage} from "./UploadImage.jsx";
 const ChatBox = ({message, setMessage,
                   images, setImages,
                   includeChatHistory, setIncludeChatHistory,
-                  useRag, setUseRag,
+                  useRag, setUseRag, ragTopK, setRagTopK,
                   textDocs, setTextDocs,
                   submitMessage, width='80%', generating, cancelRequest, setSizeChanged}) => {
   const [height, setHeight] = useState(2)
@@ -179,9 +179,16 @@ const ChatBox = ({message, setMessage,
         </div>
         <div>
           <Tooltip title={'Include Knowledge with RAG'}>
-            <Switch checkedChildren="Knowledge" autoFocus={false}
+            <Switch checkedChildren="Knowledge" autoFocus={false} style={{marginBottom: '0.2rem'}}
                     checked={useRag} onChange={setUseRag}
-                    unCheckedChildren="No Knowlege"/>
+                    unCheckedChildren="Knowlege"/>
+            {useRag && <Tooltip title={'Top K Similarity Documents'}>
+                <span style={{marginLeft:'0.2rem'}}>
+                  Top
+                  <Input size='small' value={ragTopK} onChange={(e)=>{setRagTopK(e.target.value)}}
+                         style={{width:'2rem', height:'1.5rem', marginLeft:'0.2rem'}}/>
+                </span>
+            </Tooltip>}
           </Tooltip>
         </div>
       </Flex>

@@ -60,14 +60,6 @@ export let UserRoles = [
     },
 ]
 
-export let llmOption = {
-    temperature: 0.2,
-    max_completion_tokens: 4096,
-    top_p: 0.95,
-    frequency_penalty: 0,
-    presence_penalty: 0,
-
-}
 
 function App() {
     const [messageApi, contextHolder] = message.useMessage();
@@ -76,8 +68,15 @@ function App() {
     const [currentModel, setCurrentModel] = useState('qwen2.5:0.5b')
     const [currentRole, setCurrentRole] = useState('Developer')
     const [models, setModels] = useState([])
+    const [llmOption, setLlmOption] = useState({
+        temperature: 0.2,
+        max_completion_tokens: 4096,
+        top_p: 0.95,
+        frequency_penalty: 0,
+        presence_penalty: 0,
 
-    const [temperature, setTemperature] = useState(0)
+    })
+
     const {
         token: {colorBgContainer, borderRadiusLG},
     } = theme.useToken();
@@ -112,10 +111,9 @@ function App() {
 
         // store / retrieve options
         if (localStorage.getItem('options')) {
-            llmOption = JSON.parse(localStorage.getItem('options'))
-            setTemperature(llmOption.temperature)
+            const option = JSON.parse(localStorage.getItem('options'))
+            setLlmOption(option)
         } else {
-            setTemperature(llmOption.temperature)
             localStorage.setItem('options', JSON.stringify(llmOption))
         }
 
@@ -177,7 +175,7 @@ function App() {
     }
 
     return (
-        <ChatUiContext.Provider value={{messageApi, currentChat, setCurrentChat}}>
+        <ChatUiContext.Provider value={{messageApi, currentChat, setCurrentChat, llmOption}}>
             {contextHolder}
             <Layout theme='dark' style={{width: '100vw', minHeight: '100vh'}}>
                 <Header style={{
@@ -269,10 +267,9 @@ function App() {
                 <Flex gap='small'>
                     <div>Temperature: <span style={{fontStyle: "italic"}}>Accurate</span></div>
                     <div style={{marginTop: '-0.2rem'}}>
-                        <Slider style={{width: '150px'}} value={temperature} step={0.1} min={0.1} max={0.9}
+                        <Slider style={{width: '150px'}} value={llmOption.temperature} step={0.1} min={0.1} max={0.9}
                                 onChange={v => {
-                                    setTemperature(v)
-                                    llmOption.temperature = v
+                                    setLlmOption(prev => {return {...llmOption, temperature: v}})
                                 }}/>
                     </div>
                     <div><span style={{fontStyle: "italic"}}>Creative</span></div>
