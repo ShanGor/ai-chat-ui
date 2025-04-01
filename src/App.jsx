@@ -119,6 +119,10 @@ function App() {
 
     }, [])
 
+    useEffect(()=>{
+        localStorage.setItem('options', JSON.stringify(llmOption))
+    }, [llmOption])
+
     useEffect(() => {
         if (models && models.length > 0) {
             // store / retrieve model
@@ -175,7 +179,7 @@ function App() {
     }
 
     return (
-        <ChatUiContext.Provider value={{messageApi, currentChat, setCurrentChat, llmOption}}>
+        <ChatUiContext.Provider value={{messageApi, currentChat, setCurrentChat, llmOption, setLlmOption}}>
             {contextHolder}
             <Layout theme='dark' style={{width: '100vw', minHeight: '100vh'}}>
                 <Header style={{

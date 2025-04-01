@@ -7,14 +7,14 @@ import {
   FloatButton,
   Select, Input
 } from "antd"
-import {useEffect, useState} from "react"
+import {useContext, useEffect, useState} from "react"
 import {
   PlusOutlined,
   ArrowUpOutlined, PieChartOutlined,
 } from '@ant-design/icons';
 import "./ChatBox.css"
 import Microphone from "../assets/microphone.svg"
-import {mainPaneParagraphColor} from "../App"
+import {ChatUiContext, mainPaneParagraphColor} from "../App"
 import Stop from '../assets/stop.svg'
 import {textNotEmpty} from "../Utility";
 import 'react-pdf/dist/Page/TextLayer.css';
@@ -31,6 +31,7 @@ const ChatBox = ({message, setMessage,
   const [height, setHeight] = useState(2)
   const [isFocused, setIsFocused] = useState(false)
   const [inputFieldRef, setInputFieldRef] = useState(null)
+  const {llmOption, setLlmOption} = useContext(ChatUiContext)
 
   const [showUsageDialog, setShowUsageDialog] = useState(false)
 
@@ -190,6 +191,13 @@ const ChatBox = ({message, setMessage,
                 </span>
             </Tooltip>}
           </Tooltip>
+        </div>
+        <div>
+          Max Tokens
+          <Input size='small' value={llmOption.max_completion_tokens} onChange={(e) => {
+                    setLlmOption(p => {return {...p, max_completion_tokens: e.target.value}})
+                  }}
+                 style={{width: '3.5rem', height: '1.5rem', marginLeft: '0.2rem'}}/>
         </div>
       </Flex>
     </ConfigProvider>
