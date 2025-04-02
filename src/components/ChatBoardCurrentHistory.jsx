@@ -47,9 +47,16 @@ const ChatBoardCurrentHistory = ({chatHistory, setChatHistory, generating, gener
     }
 
     const formatReferenceDoc = (doc) => {
-        let source = doc.metadata?.fileOriginalName
-        let pageId = doc.metadata?.fileRecordId
-        let title = doc.metadata?.title || pageId
+        if (!doc) return <></>
+        let meta = null;
+        if (doc.metadata) {
+            meta = doc.metadata
+        } else if (doc.metaData) {
+            meta = doc.metaData
+        }
+        let source = meta?.source || meta?.fileOriginalName
+        let pageId = meta?.id_in_source || meta?.fileRecordId
+        let title = meta?.title || pageId
         let url = ''
         let content = <div style={{width: '500px', maxHeight: '500px', overflowY: 'auto'}}>{doc.text}</div>
         return <Popover content={content} placement="rightTop">
