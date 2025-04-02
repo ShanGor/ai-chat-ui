@@ -54,8 +54,8 @@ const ChatBoardCurrentHistory = ({chatHistory, setChatHistory, generating, gener
         } else if (doc.metaData) {
             meta = doc.metaData
         }
-        let source = meta?.source || meta?.fileOriginalName
-        let pageId = meta?.id_in_source || meta?.fileRecordId
+        let source = meta?.source || meta?.fileOriginalName || 'Unknown'
+        let pageId = meta?.id_in_source || meta?.fileRecordId || 'Unknown'
         let title = meta?.title || pageId
         let url = ''
         let content = <div style={{width: '500px', maxHeight: '500px', overflowY: 'auto'}}>{doc.text}</div>
