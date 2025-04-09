@@ -62,13 +62,13 @@ const ChatBoard = ({collapsed, currentModel, currentRole}) => {
     if (aboutToTriggerLlmCall && chatHistory.length > 0) {
       console.log("about to triggerLlmCall", chatHistory)
       aboutToTriggerLlmCall = false
-      responseHandler({})
+      responseHandler(null)
       triggerAiChatCompletion(chatHistory).then()
     }
 
     if (aboutToTriggerLlmCallWithRag && chatHistory.length > 0) {
       aboutToTriggerLlmCallWithRag = false
-      responseHandler({})
+      responseHandler(null)
       // let last = chatHistory[chatHistory.length-1]
       // let refData = last.referenceData
       // console.log("before calling triggerAiChatCompletionWithRag", last)
@@ -224,10 +224,10 @@ const ChatBoard = ({collapsed, currentModel, currentRole}) => {
     }
 
     generatingTextCache = ''
-    fetchEvents(`${import.meta.env.VITE_API_URL}/ollama/chat`, (text) => {
+    fetchEvents(`${import.meta.env.VITE_API_URL}/ollama/chat`, (evt) => {
       // console.log("got text", text)
       try {
-        responseHandler(text)
+        responseHandler(evt)
       } catch(e) {
         console.log("error parsing", text)
         console.log("error details: ", e)
@@ -328,7 +328,7 @@ const ChatBoard = ({collapsed, currentModel, currentRole}) => {
       } else {
         messages = [...hist]
       }
-      responseHandler({})
+      responseHandler(null)
       triggerAiChatCompletion(messages, true).then()
       setUseRag(false)
       return data
@@ -369,7 +369,9 @@ const ChatBoard = ({collapsed, currentModel, currentRole}) => {
     setChatBoxTop(document.getElementById('chat-box-parent').getBoundingClientRect().top)
   }
 
-  const responseHandler = (text) => {
+  const responseHandler = (evt) => {
+    let text = evt?.data || evt
+
     if (!text) return
     if ("DONE" === text) {
       console.log("done as: ", generatingTextCache)

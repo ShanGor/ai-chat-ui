@@ -4,6 +4,7 @@ import App from './App.jsx'
 import './index.css'
 import {createBrowserRouter, RouterProvider} from "react-router";
 import Admin from "./components/admin/Admin.jsx";
+import CurrentFlow from "./components/agent/CurrentFlow.jsx";
 
 let routes = [
     {
@@ -22,6 +23,10 @@ let routes = [
             }
         ]
 
+    },
+    {
+        path: "/agent",
+        Component: CurrentFlow,
     }
 ]
 

@@ -18,19 +18,26 @@ export const textNotEmpty = (message) => {
   return false;
 };
 
-export const fetchEvents = (url, textConsumer, data=null, headers={}, method='POST') => {
+export const fetchEvents = (url, eventConsumer, data=null, headers={}, method='POST') => {
   generationCancel = false
 
-  fetch(url, {
+  const options = {
       method: method,
       headers: {...headers,
-         'Content-Type': 'text/event-stream;chartset=UTF-8',
-         'Connection': 'keep-alive',
-         'Cache-Control': 'no-cache'
-        },
-      body: data
-  })
-  .then(response => {
+          'Content-Type': 'text/event-stream;chartset=UTF-8',
+          'Connection': 'keep-alive',
+          'Cache-Control': 'no-cache'
+      }
+  }
+  if (data) {
+      options.body = data
+  }
+
+  fetch(url, options).then(response => {
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+
       const reader = response.body.getReader()
       const textDecoder = new TextDecoder()
       const readChunk = () => {
@@ -44,18 +51,25 @@ export const fetchEvents = (url, textConsumer, data=null, headers={}, method='PO
             return
           }
           const text = textDecoder.decode(value)
-          text.split('\n').forEach(line => {
-            if (line.startsWith('event:')) {
-              textConsumer(line.substring('event:'.length))
-            } else if (line.startsWith('id:')) {
+          let id=null
+          let event = null
+          let data=null
+          const lines = text.split('\n')
+          for (let i = 0; i < lines.length; i++) {
+              const line = lines[i].trim()
+              if (line.startsWith('event:')) {
+                  event = (line.substring('event:'.length))
+              } else if (line.startsWith('id:')) {
+                  id = (line.substring('id:'.length))
+              } else if (line.startsWith('data:')) {
+                  data = line.substring('data:'.length)
+                  eventConsumer({id: id, event: event, data: data})
+                  id=null
+                  event = null
+                  data=null
+              }
+          }
 
-            } else if (line.startsWith('data:')) {
-              textConsumer(line.substring('data:'.length))
-            } else {
-              if (line !== '') textConsumer(line)
-            }
-          })
-          
           readChunk()
         }).catch(error => {
           console.error(error)
