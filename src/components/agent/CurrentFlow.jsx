@@ -12,7 +12,6 @@ import {useEffect} from "react";
 import {getLayoutedElements} from "./ReactFlowUtil.jsx";
 import {insertCss} from "insert-css";
 import {dagImage} from "./AlgoNode.jsx";
-import {fetchEvents} from "../../Utility.js";
 
 const nodeWidth = 180;
 const nodeHeight = 36;
@@ -92,12 +91,14 @@ const nodeTypes = {
     ACTION: ActionNode,
 };
 
+
 const Workflow = () => {
     const { fitView } = useReactFlow();
     const [nodes, setNodes, onNodesChange] = useNodesState([])
     const [edges, setEdges, onEdgesChange] = useEdgesState([])
-    const getFlow = async () => {
-        const resp = await fetch(`${import.meta.env.VITE_API_URL}/agents`)
+
+    const getFlow = async (flowName) => {
+        const resp = await fetch(`${import.meta.env.VITE_API_URL}/api/agents/${flowName}`)
         if (!resp.ok) {
             console.log('Error fetching flow data: ', resp)
             return
@@ -121,39 +122,86 @@ const Workflow = () => {
         return layout
     }
 
-    const monitorStatus = async (layout) => {
+    const monitorStatus = async (transactionId, layout) => {
         let newNodes = [...layout.nodes]
         let newEdges = [...layout.edges]
-        fetchEvents(`${import.meta.env.VITE_API_URL}/agents/1`, (evt) => {
-            const flowId = evt.id;
-            const data = JSON.parse(evt.data);
-            console.log(`got status for ${flowId}: node ${data.id}`, data.status)
+        let allComplete = false
 
+        const checkStatus = async () => {
+            let resp = await fetch(`${import.meta.env.VITE_API_URL}/api/agents/status/${transactionId}`)
+            if (!resp.ok) {
+                console.log('Error fetching status: ', resp)
+                return
+            }
+            let data = await resp.json()
+            allComplete = true
             for (let i=0; i<newNodes.length; i++) {
                 const node = newNodes[i]
-                if (node?.id === data.id) {
-                    node.data.status = data.status
-                    if ('running' === data.status) {
+                let nodeStatus = null;
+                for (let j=0; j<data.length; j++) {
+                    if (data[j].id === node.id) {
+                        nodeStatus = data[j]
+                        break
+                    }
+                }
+                if (node?.type === 'ACTION') {
+                    if (!nodeStatus) {
+                        allComplete = false
+                    } else if ('running' === nodeStatus.status || 'default' === nodeStatus.status) {
+                        allComplete = false
+                    }
+                }
+                if (nodeStatus) {
+                    node.data.status = nodeStatus.status
+                    if ('running' === nodeStatus.status) {
                         newEdges.forEach((edge) => {
-                            if (edge.target === data.id) {
+                            if (edge.target === nodeStatus.id) {
                                 edge.animated = true
                             }
                         })
                     } else {
                         newEdges.forEach((edge) => {
-                            if (edge.target === data.id) {
+                            if (edge.target === nodeStatus.id) {
                                 edge.animated = false
                             }
                         })
                     }
                 }
+
             }
             setNodes([...newNodes])
-        }, null, null, 'GET')
+        }
+        while (!allComplete) {
+            await new Promise(resolve => setTimeout(resolve, 1000))
+            await checkStatus()
+        }
+
     }
     useEffect(()=> {
-        getFlow().then((layout)=> {
-            monitorStatus(layout).then()
+        const flowId = 'test-agent'
+        fetch(`${import.meta.env.VITE_API_URL}/api/state-machine/generate-id`).then(resp => {
+            if (resp.ok) {
+                resp.text().then(id => {
+                    fetch(`${import.meta.env.VITE_API_URL}/api/state-machine/${flowId}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Correlation-ID': id
+                        },
+                        body: JSON.stringify({
+                            flowId: flowId
+                        })
+                    }).then(resp => {
+                        getFlow(flowId).then((layout)=> {
+                            monitorStatus(id, layout).then()
+                        })
+                    })
+
+                })
+
+            } else {
+                console.error('Error fetching flow id: ', resp)
+            }
         })
 
     }, [])
