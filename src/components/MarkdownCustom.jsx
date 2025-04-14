@@ -9,6 +9,7 @@ import {lazy, memo, Suspense, useContext} from "react";
 import Loading from "../Loading.jsx";
 import PlantUMLShow from "./PlantUMLShow.jsx";
 import {ChatUiContext} from "../App";
+import MarkdownCsvShow from "./MarkdownCsvShow.jsx";
 
 const MermaidShow = lazy(()=> import("./MermaidShow.jsx"));
 const RevealjsShow = lazy(()=> import("./RevealjsShow.jsx"));
@@ -72,6 +73,17 @@ const MarkdownCustom = memo(({markdownScript, index=0}) => {
                 children: <Suspense fallback={<Loading />}>
                     <RevealjsShow slides={child} />
                 </Suspense>,
+            }, {
+                key: '2',
+                label: 'Source',
+                children: source,
+            },]
+            return <Tabs defaultActiveKey="1" items={items}></Tabs>
+        } else if ("language-csv" === className) {
+            let items = [{
+                key: '1',
+                label: 'CSV',
+                children: <MarkdownCsvShow csv={child} />,
             }, {
                 key: '2',
                 label: 'Source',

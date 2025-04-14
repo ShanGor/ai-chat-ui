@@ -146,6 +146,7 @@ const ChatBoard = ({collapsed, currentModel, currentRole}) => {
         content: 'Please select a model before sending messages',
       });
     } else {
+      setGenerating(true)
       let hist;
       if (useRag) {
         aboutToTriggerLlmCallWithRag = true
@@ -224,7 +225,7 @@ const ChatBoard = ({collapsed, currentModel, currentRole}) => {
     }
 
     generatingTextCache = ''
-    fetchEvents(`${import.meta.env.VITE_API_URL}/ollama/chat`, (evt) => {
+    fetchEvents(`${import.meta.env.VITE_API_URL}/api/chat`, (evt) => {
       // console.log("got text", text)
       try {
         responseHandler(evt)
