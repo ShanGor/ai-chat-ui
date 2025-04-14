@@ -8,7 +8,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
-import {useEffect} from "react";
+import {useEffect, useState} from "react";
 import {getLayoutedElements} from "./ReactFlowUtil.jsx";
 import {insertCss} from "insert-css";
 import {dagImage} from "./AlgoNode.jsx";
@@ -91,11 +91,13 @@ const nodeTypes = {
     ACTION: ActionNode,
 };
 
+let layout = null
 
-const Workflow = () => {
+const Workflow = ({agentName, agentContext}) => {
     const { fitView } = useReactFlow();
     const [nodes, setNodes, onNodesChange] = useNodesState([])
     const [edges, setEdges, onEdgesChange] = useEdgesState([])
+    const [layout, setLayout] = useState(null)
 
     const getFlow = async (flowName) => {
         const resp = await fetch(`${import.meta.env.VITE_API_URL}/api/agents/${flowName}`)
@@ -119,10 +121,10 @@ const Workflow = () => {
         const layout = getLayoutedElements(defaultNodes, initEdges, edgeOptions);
         setNodes([...layout.nodes]);
         setEdges([...layout.edges]);
-        return layout
+        setLayout(layout)
     }
 
-    const monitorStatus = async (transactionId, layout) => {
+    const monitorStatus = async (transactionId) => {
         let newNodes = [...layout.nodes]
         let newEdges = [...layout.edges]
         let allComplete = false
@@ -175,35 +177,10 @@ const Workflow = () => {
             await new Promise(resolve => setTimeout(resolve, 1000))
             await checkStatus()
         }
-
     }
+
     useEffect(()=> {
-        const flowId = 'test-agent'
-        fetch(`${import.meta.env.VITE_API_URL}/api/state-machine/generate-id`).then(resp => {
-            if (resp.ok) {
-                resp.text().then(id => {
-                    fetch(`${import.meta.env.VITE_API_URL}/api/state-machine/${flowId}`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-Correlation-ID': id
-                        },
-                        body: JSON.stringify({
-                            flowId: flowId
-                        })
-                    }).then(resp => {
-                        getFlow(flowId).then((layout)=> {
-                            monitorStatus(id, layout).then()
-                        })
-                    })
-
-                })
-
-            } else {
-                console.error('Error fetching flow id: ', resp)
-            }
-        })
-
+        getFlow(agentName).then()
     }, [])
 
     useEffect(() => {
@@ -211,10 +188,32 @@ const Workflow = () => {
     }, [nodes, edges])
 
     useEffect(() => {
-        if (nodes.length > 0) {
+        if (agentContext) {
+            fetch(`${import.meta.env.VITE_API_URL}/api/state-machine/generate-id`).then(resp => {
+                if (resp.ok) {
+                    resp.text().then(id => {
+                        fetch(`${import.meta.env.VITE_API_URL}/api/state-machine/${agentName}`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-Correlation-ID': id
+                            },
+                            body: JSON.stringify({
+                                flowId: agentName
+                            })
+                        }).then(resp => {
 
+                        })
+
+                        monitorStatus(id).then()
+                    })
+
+                } else {
+                    console.error('Error fetching flow id: ', resp)
+                }
+            })
         }
-    }, [nodes]);
+    }, [agentContext]);
 
     return <ReactFlow nodes={nodes}
                       edges={edges}
@@ -226,13 +225,11 @@ const Workflow = () => {
                       fitView />
 }
 
-const CurrentFlow = () => {
-
-    return <div style={{width: '90vw', height: '80vh'}}>
-        <h1>Current Flow</h1>
+const CurrentFlow = ({agentName, agentContext, style={width: '90vw', height: '80vh'}}) => {
+    return <div style={style}>
         <div style={{ height: '100%', width: '100%' }}>
             <ReactFlowProvider>
-                <Workflow />
+                <Workflow agentName={agentName} agentContext={agentContext} />
             </ReactFlowProvider>
         </div>
     </div>

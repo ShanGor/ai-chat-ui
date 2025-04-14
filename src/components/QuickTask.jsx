@@ -1,4 +1,4 @@
-import {Card, Flex } from "antd"
+import {Badge, Card, Flex} from "antd"
 import {
     ArrowUpOutlined,
   } from '@ant-design/icons';
@@ -6,11 +6,25 @@ import {
 import "./QuickTask.css"
 const { Meta } = Card;
 
-const QuickTask = ({title, description, onClick=null}) => {
+const QuickTask = ({title, description, onClick=null, agentName=null}) => {
+
+    const formatTitle = () => {
+        return <span>
+            {title}
+            {agentName && <Badge
+                count={`Agent`}
+                style={{ backgroundColor: 'purple', marginLeft: '1rem', marginTop: '-0.5rem' }}
+            />}
+        </span>
+    }
+
     return (
-    <Card variant="borderless" onClick={()=> onClick && onClick(`${title} ${description}`)} className="quick-task">
+    <Card variant="borderless" onClick={()=> onClick && onClick({
+        message: `${title} ${description}`,
+        agentName: agentName,
+    })} className="quick-task">
     <Flex>
-      <Meta title={title} style={{textAlign: 'left', width: '90%'}}
+      <Meta title={formatTitle()} style={{textAlign: 'left', width: '90%'}}
             description={description} />
       <span className="hide">
         <ArrowUpOutlined style={{fontSize: '1.5rem'}} />

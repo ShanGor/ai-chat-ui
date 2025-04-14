@@ -28,7 +28,6 @@ const LeftSider = (props) => {
     new IndexedDb('chats', 1, 'chat').open().then(db => setChatsDb(db))
   }, [])
 
-
   useEffect(() => {
     if (chatsDb) {
       chatsDb.getAll((event) => {

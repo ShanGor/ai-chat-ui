@@ -156,7 +156,7 @@ const ChatBoardCurrentHistory = ({chatHistory, setChatHistory, generating, gener
                     })}
                     {generating && <GeneratingResponseSection generatingText={generatingText} currentModel={currentModel}/>}
                 </div> :
-                <NewChats setMessage={setMessage} currentRole={currentRole}/>}
+                <NewChats setMessage={setMessage} currentRole={currentRole} />}
 
         <Modal title="Edit Question" open={editQuestionModalOpen} onOk={handleEditLastQuestionOk} onCancel={() => {setEditQuestionModalOpen(false)}} okText="Save" cancelText="Cancel">
             <Input.TextArea rows={4} value={editMessage} onChange={(e) => setEditMessage(e.target.value)} />

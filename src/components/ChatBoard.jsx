@@ -3,6 +3,7 @@ import {ChatUiContext, UserRoles} from "../App"
 import ChatBox from "./ChatBox";
 import {abbr, cancelGeneration, fetchEvents, getCurrentTimeAsFormatted, textNotEmpty} from "../Utility";
 import ChatBoardCurrentHistory from "./ChatBoardCurrentHistory.jsx";
+import CurrentFlow from "./agent/CurrentFlow.jsx";
 
 let generatingTextCache = ''
 let generatingBoxHeightCache=0
@@ -19,7 +20,7 @@ const ChatBoard = ({collapsed, currentModel, currentRole}) => {
   const [message, setMessage] = useState('')
   const [generating, setGenerating] = useState(false)
   const [generatingText, setGeneratingText] = useState('')
-  const {currentChat, setCurrentChat, messageApi, llmOption} = useContext(ChatUiContext)
+  const {currentChat, setCurrentChat, messageApi, llmOption, currentAgent} = useContext(ChatUiContext)
   const [chatHistory, setChatHistory] = useState([])
   const [chatBoxTop, setChatBoxTop] = useState(0)
   const [selectModeBottom, setSelectModeBottom] = useState(0)
@@ -32,13 +33,11 @@ const ChatBoard = ({collapsed, currentModel, currentRole}) => {
   const [images, setImages] = useState([])
   const [textDocs, setTextDocs] = useState([])
   const [includeChatHistory, setIncludeChatHistory] = useState(5)
-
-
+  const [agentContext, setAgentContext] = useState(null)
 
   useEffect(() => {
     window.addEventListener("resize", onPaneSizeChanged)
   }, [])
-
 
   useEffect(() => {
     if (currentChat && currentChat.initiatedBySide) {
@@ -138,6 +137,15 @@ const ChatBoard = ({collapsed, currentModel, currentRole}) => {
         content: 'Please enter a message before sending',
       });
       return
+    }
+
+    if (currentAgent) {
+      messageApi.open({
+        type: 'info',
+        content: `About to trigger the flow ${currentAgent}`,
+      });
+      setAgentContext("started");
+      return;
     }
 
     if (!currentModel) {
@@ -441,7 +449,11 @@ const ChatBoard = ({collapsed, currentModel, currentRole}) => {
         }}>
         </div>
         <div style={{height: contentPaneHeight, width: '100%', overflowY: 'scroll', overflowX: 'hidden'}}>
-          <ChatBoardCurrentHistory chatHistory={chatHistory}
+          {currentAgent ?
+              <div style={{width: '90vw', height: '80vh'}}>
+                <CurrentFlow agentName={currentAgent} agentContext={agentContext} />
+              </div> :
+              <ChatBoardCurrentHistory chatHistory={chatHistory}
                                    setChatHistory={setChatHistory}
                                    generating={generating}
                                    generatingText={generatingText}
@@ -449,6 +461,7 @@ const ChatBoard = ({collapsed, currentModel, currentRole}) => {
                                    currentRole={currentRole}
                                    setMessage={setMessage}
                                    regenerateResult={regenerateResult} />
+          }
         </div>
 
         <div style={{position: 'fixed', bottom: '0', width: '100%'}} id='chat-box-parent' ref={(el) => {

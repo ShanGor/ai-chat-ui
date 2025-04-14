@@ -31,7 +31,7 @@ const ChatBox = ({message, setMessage,
   const [height, setHeight] = useState(2)
   const [isFocused, setIsFocused] = useState(false)
   const [inputFieldRef, setInputFieldRef] = useState(null)
-  const {llmOption, setLlmOption} = useContext(ChatUiContext)
+  const {llmOption, setLlmOption, currentAgent} = useContext(ChatUiContext)
 
   const [showUsageDialog, setShowUsageDialog] = useState(false)
 
@@ -147,15 +147,8 @@ const ChatBox = ({message, setMessage,
     }
   }
 
-
-  const getLeftWidth = () => {
-    let boxWidth = document.getElementById('chatbox-div')?.getBoundingClientRect().width;
-    let totalWidth = boxWidth / 0.9
-    return Math.round((totalWidth - boxWidth) / 2) - 12
-  }
-
-  return (<div style={{marginTop: '0.2rem', width: width, marginLeft: `${getLeftWidth()}px`}} id='chatbox-div'>
-    <ConfigProvider
+  const optionSection = () => {
+    return <ConfigProvider
         theme={{
           components: {
             Switch: {
@@ -184,23 +177,35 @@ const ChatBox = ({message, setMessage,
                     checked={useRag} onChange={setUseRag}
                     unCheckedChildren="Knowlege"/>
             {useRag && <Tooltip title={'Top K Similarity Documents'}>
-                <span style={{marginLeft:'0.2rem'}}>
-                  Top
-                  <Input size='small' value={ragTopK} onChange={(e)=>{setRagTopK(e.target.value)}}
-                         style={{width:'2rem', height:'1.5rem', marginLeft:'0.2rem'}}/>
-                </span>
+              <span style={{marginLeft:'0.2rem'}}>
+                Top
+                <Input size='small' value={ragTopK} onChange={(e)=>{setRagTopK(e.target.value)}}
+                       style={{width:'2rem', height:'1.5rem', marginLeft:'0.2rem'}}/>
+              </span>
             </Tooltip>}
           </Tooltip>
         </div>
         <div>
           Max Tokens
           <Input size='small' value={llmOption.max_completion_tokens} onChange={(e) => {
-                    setLlmOption(p => {return {...p, max_completion_tokens: e.target.value}})
-                  }}
+            setLlmOption(p => {return {...p, max_completion_tokens: e.target.value}})
+          }}
                  style={{width: '3.5rem', height: '1.5rem', marginLeft: '0.2rem'}}/>
         </div>
       </Flex>
     </ConfigProvider>
+  }
+
+  const getLeftWidth = () => {
+    let boxWidth = document.getElementById('chatbox-div')?.getBoundingClientRect().width;
+    let totalWidth = boxWidth / 0.9
+    return Math.round((totalWidth - boxWidth) / 2) - 12
+  }
+
+  return (<div style={{marginTop: '0.2rem', width: width, marginLeft: `${getLeftWidth()}px`}} id='chatbox-div'>
+    {currentAgent ? <div style={{width: '80%', marginLeft: '3%', marginBottom: '0.2rem', textAlign: 'left'}}>
+      Please input your prompt to start the agent flow: <code>{currentAgent}</code>
+    </div> : optionSection()}
 
     <div className="center"
          style={{border: '1px solid #ccc', width: '95%', borderRadius: '1rem', backgroundColor: 'white',}}>

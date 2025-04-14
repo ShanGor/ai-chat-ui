@@ -76,6 +76,7 @@ function App() {
         presence_penalty: 0,
 
     })
+    const [currentAgent, setCurrentAgent] = useState(null)
 
     const {
         token: {colorBgContainer, borderRadiusLG},
@@ -118,6 +119,17 @@ function App() {
         }
 
     }, [])
+
+    useEffect(() => {
+        if (currentAgent) {
+            setCollapsed(true)
+        }
+    }, [currentAgent]);
+    useEffect(() => {
+        if (!collapsed) {
+            setCurrentAgent(null)
+        }
+    }, [collapsed]);
 
     useEffect(()=>{
         localStorage.setItem('options', JSON.stringify(llmOption))
@@ -179,7 +191,7 @@ function App() {
     }
 
     return (
-        <ChatUiContext.Provider value={{messageApi, currentChat, setCurrentChat, llmOption, setLlmOption}}>
+        <ChatUiContext.Provider value={{messageApi, currentChat, setCurrentChat, llmOption, setLlmOption, currentAgent, setCurrentAgent}}>
             {contextHolder}
             <Layout theme='dark' style={{width: '100vw', minHeight: '100vh'}}>
                 <Header style={{
@@ -199,6 +211,7 @@ function App() {
                                   <Tooltip title='Create a new chat'>
                                     <Button size="middle" style={{color: 'white', backgroundColor: 'green'}}
                                             onClick={() => {
+                                                setCurrentAgent(null)
                                                 setCurrentChat({initiatedBySide: true})
                                             }}
                                             icon={<PlusOutlined/>}/>

@@ -1,17 +1,26 @@
-import { mainPaneParagraphColor } from "../App"
+import {ChatUiContext, mainPaneParagraphColor} from "../App"
 
 import QuickTask from "./QuickTask";
 import {Flex, Typography} from "antd"
 import {
     AndroidOutlined,
 } from '@ant-design/icons';
+import {useContext} from "react";
 
 const { Title } = Typography;
 
-const NewChats = ({setMessage, currentRole}) => {
+const NewChats = ({setMessage, currentRole }) => {
 
-    const onQuickTask = (task) => {
-        setMessage(task)
+    const {setCurrentAgent} = useContext(ChatUiContext)
+
+    const onQuickTask = ({message, agentName}) => {
+        if (agentName) {
+            setCurrentAgent(agentName)
+            setMessage("")
+        } else {
+            setCurrentAgent(null)
+            setMessage(message)
+        }
     }
 
     const QuickChatTemplates = () => {
@@ -20,6 +29,13 @@ const NewChats = ({setMessage, currentRole}) => {
                 <Flex justify="center" style={{width: '800px'}} className="center" gap='large' wrap="wrap">
                     <QuickTask onClick={onQuickTask} title='Design with RevealJs' description='for requirements: ' />
                     <QuickTask onClick={onQuickTask} title='Design with PptxGenJs' description="for requirements: " />
+                </Flex>
+            )
+        } else if (currentRole === 'BA') {
+            return (
+                <Flex justify="center" style={{width: '800px'}} className="center" gap='large' wrap="wrap">
+                    <QuickTask onClick={onQuickTask} agentName={'test-agent'} title='BA Flow' description='For user story writting' />
+                    <QuickTask onClick={onQuickTask} title='Design with RevealJs' description='for requirements: ' />
                 </Flex>
             )
         } else {
