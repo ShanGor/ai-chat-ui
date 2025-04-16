@@ -34,8 +34,8 @@ const NewChats = ({setMessage, currentRole }) => {
         } else if (currentRole === 'BA') {
             return (
                 <Flex justify="center" style={{width: '800px'}} className="center" gap='large' wrap="wrap">
-                    <QuickTask onClick={onQuickTask} agentName={'test-agent'} title='BA Flow' description='For user story writting' />
-                    <QuickTask onClick={onQuickTask} title='Design with RevealJs' description='for requirements: ' />
+                    <QuickTask onClick={onQuickTask} agentName={'test-agent'} title='UK BA Flow' description='For user story writting' />
+                    <QuickTask onClick={onQuickTask} title='placeholder' description='placeholder' />
                 </Flex>
             )
         } else {

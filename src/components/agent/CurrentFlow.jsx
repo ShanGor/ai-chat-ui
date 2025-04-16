@@ -1,48 +1,29 @@
 import {
     ReactFlow,
-    Position,
     useReactFlow,
     ReactFlowProvider,
     useNodesState,
-    useEdgesState, EdgeLabelRenderer, BaseEdge, getBezierPath, Handle
+    useEdgesState, Controls
 } from '@xyflow/react';
+
 import '@xyflow/react/dist/style.css';
 
-import {useEffect, useState} from "react";
+import {useContext, useEffect, useRef, useState} from "react";
 import {getLayoutedElements} from "./ReactFlowUtil.jsx";
 import {insertCss} from "insert-css";
-import {dagImage} from "./AlgoNode.jsx";
+import {CustomEdge} from "./CustomEdge.jsx";
+import {ActionNode, EndNode, StartNode} from "./CustomNode.jsx";
+import {Avatar, Card, Flex, List, Spin, Tabs} from "antd";
+import {ChatUiContext} from "../../App.jsx";
+import {FlowHistory} from "./FlowHistory.jsx";
+import assistant from "../../assets/assistant.svg";
+import user from "../../assets/user.svg";
+import MarkdownCustom from "../MarkdownCustom.jsx";
+
 
 const nodeWidth = 180;
 const nodeHeight = 36;
 
-// 自定义边组件
-const CustomEdge = ({ id, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, curvature }) => {
-    const reactFlow = useReactFlow();
-    const [edgePath, labelX, labelY] = getBezierPath({
-        sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition, curvature,
-    });
-    const edge = reactFlow.getEdge(id)
-    const label = edge?.label;
-
-    return (
-        <>
-            <BaseEdge id={id} path={edgePath}/>
-            <EdgeLabelRenderer>
-                <span
-                    style={{
-                        position: 'absolute',
-                        fontSize: '0.8rem',
-                        transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
-                        pointerEvents: 'all',
-                    }}
-                    className="nodrag nopan">
-                    {label}
-                </span>
-            </EdgeLabelRenderer>
-        </>
-    );
-};
 const edgeOptions = {
     animated: true,
     style: {
@@ -51,53 +32,74 @@ const edgeOptions = {
     direction: 'TB', // TB for vertical, LR for horizontal
 };
 
-const StartNode = ({}) => {
-    return (
-        <div className={'start-node'}>
-            <div style={{width:'30px', height:'30px', margin: '0 auto', borderWidth:'3px', borderColor:'#52c41a', borderStyle:'solid', borderRadius:'50%'}}></div>
-            <Handle type="source" position={Position.Bottom}/>
-        </div>
-    );
-};
-const EndNode = ({ data }) => {
-    return (
-        <div className={'start-node'}>
-            <Handle type="target" position={Position.Top} />
-            <div style={{width:'30px', height:'30px', margin: '0 auto', borderWidth:'3px', borderColor:'black', borderStyle:'solid', borderRadius:'50%'}}></div>
-        </div>
-    );
-};
-
-const ActionNode = ({ data }) => {
-    const { label, description, status = 'default' } = data;
-    return (
-        <div className={`node ${status}`}>
-            <Handle type="target" position={Position.Top} />
-            <img src={dagImage.logo} alt="logo" />
-            <span className="label">{label}</span>
-            <span className="status">
-                {status === 'success' && <img src={dagImage.success} alt="success" />}
-                {status === 'failed' && <img src={dagImage.failed} alt="failed" />}
-                {status === 'running' && <img src={dagImage.running} alt="running" />}
-            </span>
-            <Handle type="source" position={Position.Bottom} />
-        </div>
-    );
-};
-
 const nodeTypes = {
     START: StartNode,
     END: EndNode,
     ACTION: ActionNode,
 };
 
-let layout = null
+const monitorStatus = async (transactionId, layout, setNodes, setData=null, setLoading=null) => {
+    let newNodes = [...layout.nodes]
+    let newEdges = [...layout.edges]
+    let allComplete = false
 
-const Workflow = ({agentName, agentContext}) => {
+    const checkStatus = async () => {
+        let resp = await fetch(`${import.meta.env.VITE_API_URL}/api/agents/status/${transactionId}`)
+        if (!resp.ok) {
+            console.log('Error fetching status: ', resp)
+            return
+        }
+        let data = await resp.json()
+        if (setData) setData(data)
+        allComplete = true
+        for (let i=0; i<newNodes.length; i++) {
+            const node = newNodes[i]
+            let nodeStatus = null;
+            for (let j=0; j<data.length; j++) {
+                if (data[j].id === node.id) {
+                    nodeStatus = data[j]
+                    break
+                }
+            }
+            if (node?.type === 'ACTION') {
+                if (!nodeStatus) {
+                    allComplete = false
+                } else if ('running' === nodeStatus.status || 'default' === nodeStatus.status) {
+                    allComplete = false
+                }
+            }
+            if (nodeStatus) {
+                node.data.status = nodeStatus.status
+                if ('running' === nodeStatus.status) {
+                    newEdges.forEach((edge) => {
+                        if (edge.target === nodeStatus.id) {
+                            edge.animated = true
+                        }
+                    })
+                } else {
+                    newEdges.forEach((edge) => {
+                        if (edge.target === nodeStatus.id) {
+                            edge.animated = false
+                        }
+                    })
+                }
+            }
+
+        }
+        setNodes([...newNodes])
+    }
+
+    while (!allComplete) {
+        await new Promise(resolve => setTimeout(resolve, 2000))
+        await checkStatus()
+        if (setLoading) setLoading(false)
+    }
+}
+
+const Workflow = ({agentName, agentContext, setAgentContext, flowProps}) => {
     const { fitView } = useReactFlow();
-    const [nodes, setNodes, onNodesChange] = useNodesState([])
-    const [edges, setEdges, onEdgesChange] = useEdgesState([])
-    const [layout, setLayout] = useState(null)
+    const { messageApi} = useContext(ChatUiContext)
+    const {nodes, setNodes, onNodesChange, edges, setEdges, onEdgesChange, layout, setLayout, setData} = flowProps
 
     const getFlow = async (flowName) => {
         const resp = await fetch(`${import.meta.env.VITE_API_URL}/api/agents/${flowName}`)
@@ -124,61 +126,6 @@ const Workflow = ({agentName, agentContext}) => {
         setLayout(layout)
     }
 
-    const monitorStatus = async (transactionId) => {
-        let newNodes = [...layout.nodes]
-        let newEdges = [...layout.edges]
-        let allComplete = false
-
-        const checkStatus = async () => {
-            let resp = await fetch(`${import.meta.env.VITE_API_URL}/api/agents/status/${transactionId}`)
-            if (!resp.ok) {
-                console.log('Error fetching status: ', resp)
-                return
-            }
-            let data = await resp.json()
-            allComplete = true
-            for (let i=0; i<newNodes.length; i++) {
-                const node = newNodes[i]
-                let nodeStatus = null;
-                for (let j=0; j<data.length; j++) {
-                    if (data[j].id === node.id) {
-                        nodeStatus = data[j]
-                        break
-                    }
-                }
-                if (node?.type === 'ACTION') {
-                    if (!nodeStatus) {
-                        allComplete = false
-                    } else if ('running' === nodeStatus.status || 'default' === nodeStatus.status) {
-                        allComplete = false
-                    }
-                }
-                if (nodeStatus) {
-                    node.data.status = nodeStatus.status
-                    if ('running' === nodeStatus.status) {
-                        newEdges.forEach((edge) => {
-                            if (edge.target === nodeStatus.id) {
-                                edge.animated = true
-                            }
-                        })
-                    } else {
-                        newEdges.forEach((edge) => {
-                            if (edge.target === nodeStatus.id) {
-                                edge.animated = false
-                            }
-                        })
-                    }
-                }
-
-            }
-            setNodes([...newNodes])
-        }
-        while (!allComplete) {
-            await new Promise(resolve => setTimeout(resolve, 1000))
-            await checkStatus()
-        }
-    }
-
     useEffect(()=> {
         getFlow(agentName).then()
     }, [])
@@ -192,26 +139,49 @@ const Workflow = ({agentName, agentContext}) => {
             fetch(`${import.meta.env.VITE_API_URL}/api/state-machine/generate-id`).then(resp => {
                 if (resp.ok) {
                     resp.text().then(id => {
+                        // Create the history record
+                        fetch(`${import.meta.env.VITE_API_URL}/api/flow-histories`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                agentName: agentName,
+                                submissionId: id,
+                            })
+                        }).then()
+
+                        // Submit the request
                         fetch(`${import.meta.env.VITE_API_URL}/api/state-machine/${agentName}`, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
                                 'X-Correlation-ID': id
                             },
-                            body: JSON.stringify({
-                                flowId: agentName
-                            })
+                            body: JSON.stringify(agentContext)
                         }).then(resp => {
-
+                            if (resp.ok) {
+                                messageApi.open({
+                                    type: 'success',
+                                    content: 'Flow started successfully',
+                                })
+                            } else {
+                                messageApi.open({
+                                    type: 'error',
+                                    content: 'Error starting flow',
+                                })
+                                console.error('Error starting flow: ', resp)
+                            }
                         })
 
-                        monitorStatus(id).then()
+                        monitorStatus(id, layout, setNodes, setData).then()
                     })
 
                 } else {
                     console.error('Error fetching flow id: ', resp)
                 }
             })
+            setAgentContext(null)
         }
     }, [agentContext]);
 
@@ -222,16 +192,89 @@ const Workflow = ({agentName, agentContext}) => {
                       edgeTypes={{ custom: CustomEdge }}
                       nodeTypes={nodeTypes}
                       defaultEdgeOptions={{ type: 'custom' }}
-                      fitView />
+                      fitView>
+        <Controls />
+    </ReactFlow>
 }
 
-const CurrentFlow = ({agentName, agentContext, style={width: '90vw', height: '80vh'}}) => {
-    return <div style={style}>
-        <div style={{ height: '100%', width: '100%' }}>
-            <ReactFlowProvider>
-                <Workflow agentName={agentName} agentContext={agentContext} />
-            </ReactFlowProvider>
-        </div>
+const CurrentFlow = ({agentName, agentContext, setAgentContext, style={width: '95vw', height: '80vh'}}) => {
+    const [activeKey, setActiveKey] = useState('1')
+    const [nodes, setNodes, onNodesChange] = useNodesState([])
+    const [edges, setEdges, onEdgesChange] = useEdgesState([])
+    const [layout, setLayout] = useState(null)
+    const [flowDetails, setFlowDetails] = useState([])
+    const [loading, setLoading] = useState(false)
+    const mainRef = useRef()
+
+    const onChosen = (id) => {
+        setActiveKey('1')
+        setLoading(true)
+        monitorStatus(id, layout, setNodes, setFlowDetails, setLoading).then()
+    }
+    const items = [
+        {
+            key: '1',
+            label: 'Flow',
+            children: <div style={{ height: '65vh', width: '20vw' }}>
+                <ReactFlowProvider>
+                    <Workflow agentName={agentName} agentContext={agentContext} setAgentContext={setAgentContext}
+                              flowProps={{nodes, setNodes, onNodesChange, edges, setEdges, onEdgesChange,
+                                  layout, setLayout,
+                                  setData: setFlowDetails}}/>
+                </ReactFlowProvider>
+            </div>
+        },
+        {
+            key: '2',
+            label: 'History',
+            children: <div style={{ height: style.height, width: '20vw', textAlign: 'left'}}>
+                <FlowHistory agentName={agentName} agentContext={agentContext} setAgentContext={setAgentContext} onChosen={onChosen}/>
+            </div>
+        }
+    ]
+    return <div style={style} ref={mainRef}>
+        <Spin spinning={loading} percent="auto" fullscreen />
+        <Flex>
+            <div style={{height: style.height, width: '20%', position: 'sticky', top: 0}}>
+                <Tabs activeKey={activeKey} type="card" onChange={key => setActiveKey(key)} items={items}/>
+            </div>
+            <div>
+                <div style={{width: '78vw'}}>
+                    {flowDetails.map((d, i) => {
+                        const node = nodes.filter(n => n.id === d.id)[0]
+                        const positionId = `history-pane-${node?.id}`
+                        if (!node || node.type !== 'ACTION' || 'default'===node.data?.status ) return <div id={positionId}></div>
+
+                        if ('running'===node.data?.status) return <div style={{width: '5rem'}}><Spin id={positionId} spinning={true} size={'large'}></Spin></div>
+
+                        const title = node.data.label
+                        const ctx = d.context;
+                        let data = []
+                        if (ctx.chatHistory?.length >= 2) {
+                            data.push(ctx.chatHistory[ctx.chatHistory.length-2])
+                            data.push(ctx.chatHistory[ctx.chatHistory.length-1])
+                        }
+
+                        return <Card key={i} id={positionId} title={title} style={{marginBottom: '1rem', textAlign: 'left'}} >
+                            <List
+                                itemLayout="horizontal"
+                                dataSource={data}
+                                renderItem={(item, index) => (
+                                    <List.Item>
+                                        <List.Item.Meta
+                                            avatar={<Avatar src={index===0 ? user : assistant} />}
+                                            title={index===0 ? 'Input' : 'Output'}
+                                            description={<MarkdownCustom markdownScript={item.text} index={index} />}
+                                        />
+                                    </List.Item>
+                                )}
+                            />
+                        </Card>
+                    })}
+                </div>
+            </div>
+        </Flex>
+
     </div>
 };
 

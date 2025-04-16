@@ -144,7 +144,15 @@ const ChatBoard = ({collapsed, currentModel, currentRole}) => {
         type: 'info',
         content: `About to trigger the flow ${currentAgent}`,
       });
-      setAgentContext("started");
+      setAgentContext({
+        inputText: message,
+        images: images,
+        textDocs: textDocs
+      });
+
+      setMessage('')
+      setImages([])
+      setTextDocs([])
       return;
     }
 
@@ -450,9 +458,9 @@ const ChatBoard = ({collapsed, currentModel, currentRole}) => {
         </div>
         <div style={{height: contentPaneHeight, width: '100%', overflowY: 'scroll', overflowX: 'hidden'}}>
           {currentAgent ?
-              <div style={{width: '90vw', height: '80vh'}}>
-                <CurrentFlow agentName={currentAgent} agentContext={agentContext} />
-              </div> :
+              <CurrentFlow agentName={currentAgent} agentContext={agentContext} setAgentContext={setAgentContext}
+                           style={{height: contentPaneHeight, width: '100%'}}/>
+              :
               <ChatBoardCurrentHistory chatHistory={chatHistory}
                                    setChatHistory={setChatHistory}
                                    generating={generating}
