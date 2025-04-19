@@ -1,7 +1,7 @@
 import {
     CloudUploadOutlined,
     SettingOutlined,
-    UnorderedListOutlined
+    UnorderedListOutlined, UsergroupAddOutlined
 } from "@ant-design/icons";
 import {Menu} from "antd";
 import {useState} from "react";
@@ -13,6 +13,11 @@ const items = [
         key: 'docs',
         label: 'Documents',
         icon: <UnorderedListOutlined />,
+    },
+    {
+        key: 'agents',
+        label: 'Agents',
+        icon: <UsergroupAddOutlined />,
     },
     {
         key: 'settings',

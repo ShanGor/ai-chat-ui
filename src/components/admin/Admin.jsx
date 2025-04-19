@@ -4,6 +4,7 @@ import LeftSiderAdmin from "./LeftSiderAdmin.jsx";
 import {useParams} from "react-router";
 import ManageDocs from "./ManageDocs.jsx";
 import AdminSettings from "./AdminSettings.jsx";
+import Agents from "./Agents.jsx";
 
 const {Sider, Content, Header, Footer} = Layout;
 const Admin = () => {
@@ -14,6 +15,8 @@ const Admin = () => {
         switch (params.adminPath) {
             case 'docs':
                 return <ManageDocs />
+            case 'agents':
+                return <Agents />
             case 'settings':
                 return <AdminSettings />
             default:
