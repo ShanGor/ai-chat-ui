@@ -66,6 +66,7 @@ const ChatBoard = ({collapsed, currentModel, currentRole}) => {
     }
 
     if (aboutToTriggerLlmCallWithRag && chatHistory.length > 0) {
+      console.log("about to triggerLlmCallWithRag", chatHistory)
       aboutToTriggerLlmCallWithRag = false
       responseHandler(null)
       // let last = chatHistory[chatHistory.length-1]

@@ -30,7 +30,9 @@ const ManageDocs = () => {
         setLoading(true)
         const params = toURLSearchParams(tableParams);
 
-        let res = await fetch(`${import.meta.env.VITE_API_URL}/api/docs?${params}`)
+        let res = await fetch(`${import.meta.env.VITE_API_URL}/api/docs?${params}`, {
+            mode: 'cors'
+        })
         if (!res.ok) {
             messageApi.open({
                 type: 'error',
@@ -82,6 +84,7 @@ const ManageDocs = () => {
         setSpinning(true)
         let resp = await fetch(`${import.meta.env.VITE_API_URL}/api/docs/convert/${id}`, {
             method: 'POST',
+            mode: 'cors',
         })
         if (resp.ok) {
             messageApi.open({
@@ -109,6 +112,7 @@ const ManageDocs = () => {
         })
         let resp = await fetch(`${import.meta.env.VITE_API_URL}/api/docs/${id}`, {
             method: 'DELETE',
+            mode: 'cors',
         })
         if (resp.ok) {
             setDocs(docs.filter(o => o.id !== id))
@@ -183,6 +187,7 @@ const ManageDocs = () => {
             headers: {
                 'Content-Type': 'application/json',
             },
+            mode: 'cors',
             body: JSON.stringify(req),
         })
         if (resp.ok) {
@@ -212,6 +217,7 @@ const ManageDocs = () => {
                 headers: {
                     'Content-Type': 'application/json',
                 },
+                mode: 'cors',
                 body: JSON.stringify(ur),
             })
             if (resp.ok) {
@@ -286,6 +292,7 @@ const ManageDocs = () => {
             if (result) {
                 let resp = await fetch(`${import.meta.env.VITE_API_URL}/api/docs/after/${id}`, {
                     method: 'PATCH',
+                    mode: 'cors',
                 })
                 if (resp.ok) {
                     let data = await resp.json()
