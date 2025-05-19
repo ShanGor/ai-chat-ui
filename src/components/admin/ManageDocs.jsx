@@ -88,17 +88,25 @@ const ManageDocs = () => {
             mode: 'cors',
         })
         if (resp.ok) {
-            messageApi.open({
-                type: 'success',
-                content: 'Converted the file to be RAG ready!',
-            })
+            let data = await resp.json()
+            console.log("converted doc data", data)
+            if (data.statusCodeValue === 200) {
+                messageApi.open({
+                    type: 'success',
+                    content: 'Converted the file to be RAG ready!',
+                })
             setDocs(docs.map(o => {
                 if (o.id === id) {
                     o.processStatus = 'converted'
                 }
-                console.log("converted doc", o)
-                return o
-            }))
+                    return o
+                }))
+            } else {
+                messageApi.open({
+                    type: 'error',
+                    content: `Failed to convert the file to be RAG: ${data.body}`,
+                })
+            }
         } else {
             messageApi.open({
                 type: 'error',
