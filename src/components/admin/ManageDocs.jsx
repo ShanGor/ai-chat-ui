@@ -11,6 +11,7 @@ const ManageDocs = () => {
     const {messageApi} = useContext(ChatUiContext)
     const [docs, setDocs] = useState([]);
     const [ocr, setOcr] = useState(false)
+    const [autoConvert, setAutoConvert] = useState(false)
     const [loading, setLoading] = useState(false);
     const [uploading, setUploading] = useState(false)
     const [uploadProgress, setUploadProgress] = useState(0)
@@ -87,16 +88,25 @@ const ManageDocs = () => {
             mode: 'cors',
         })
         if (resp.ok) {
-            messageApi.open({
-                type: 'success',
-                content: 'Converted the file to be RAG ready!',
-            })
+            let data = await resp.json()
+            console.log("converted doc data", data)
+            if (data.statusCodeValue === 200) {
+                messageApi.open({
+                    type: 'success',
+                    content: 'Converted the file to be RAG ready!',
+                })
             setDocs(docs.map(o => {
                 if (o.id === id) {
                     o.processStatus = 'converted'
                 }
-                return o
-            }))
+                    return o
+                }))
+            } else {
+                messageApi.open({
+                    type: 'error',
+                    content: `Failed to convert the file to be RAG: ${data.body}`,
+                })
+            }
         } else {
             messageApi.open({
                 type: 'error',
@@ -300,12 +310,20 @@ const ManageDocs = () => {
                         type: 'success',
                         content: `Uploaded the file successfully!`,
                     })
+
+                    
+
                     if (docs.filter((o) => o.id === data.id).length === 0) {
                         setDocs([...docs, {
                             ...data,
                             key: data.id
                         }])
                     }
+
+                    if (autoConvert) {
+                        await convertRag(data.id)
+                    }
+                    
                 } else {
                     messageApi.open({
                         type: 'error',
@@ -329,11 +347,18 @@ const ManageDocs = () => {
                     document.getElementById('upload-file-input').click()
                 }}/>
             </Tooltip>
+
+            <Tooltip title='auto-convert uploaded files to be RAG ready'>
+                <div style={{paddingTop: '0.2rem'}}>
+                <Switch checked={autoConvert} onChange={setAutoConvert} checkedChildren="Convert" unCheckedChildren='Convert'/>
+                </div>
+            </Tooltip>
             <Tooltip title='Use OCR for image-based docs'>
                 <div style={{paddingTop: '0.2rem'}}>
                 <Switch checked={ocr} onChange={setOcr} checkedChildren="OCR" unCheckedChildren='OCR'/>
                 </div>
             </Tooltip>
+            
         </Flex>
         <Flex style={{display: uploading ? 'block' : 'none'}}>
             <Spin />
